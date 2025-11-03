@@ -55,6 +55,45 @@ import AddSale from '../pages/Sell/AddSale';
 import ListPOS from '../pages/Sell/ListPOS';
 import POS from '../pages/Sell/POS';
 
+// Stock Transfers
+import ListStockTransfers from '../pages/StockTransfers/ListStockTransfers';
+import AddStockTransfers from '../pages/StockTransfers/AddStockTransfers';
+
+// Stock Adjustment
+import ListStockAdjustments from '../pages/StockAdjustment/ListStockAdjustments';
+import AddStockAdjustments from '../pages/StockAdjustment/AddStockAdjustments';
+
+// Expenses
+import ListExpenses from '../pages/Expenses/ListExpenses';
+import AddExpenses from '../pages/Expenses/AddExpenses';
+import ExpensesCategories from '../pages/Expenses/ExpensesCategories';
+
+// Payment Accounts
+import ListAccounts from '../pages/PaymentAccounts/ListAccounts';
+import BalanceSheet from '../pages/PaymentAccounts/BalanceSheet';
+import TrialBalance from '../pages/PaymentAccounts/TrialBalance';
+import CashFlow from '../pages/PaymentAccounts/CashFlow';
+import PaymentAccountReport from '../pages/PaymentAccounts/PaymentAccountReport';
+
+// Reports
+import ProfitLossReport from '../pages/Reports/ProfitLossReport';
+import PurchaseSaleReport from '../pages/Reports/PurchaseSaleReport';
+import TaxReport from '../pages/Reports/TaxReport';
+import SupplierCustomerReport from '../pages/Reports/SupplierCustomerReport';
+import CustomerGroupsReport from '../pages/Reports/CustomerGroupsReport';
+import StockReport from '../pages/Reports/StockReport';
+import StockAdjustmentReport from '../pages/Reports/StockAdjustmentReport';
+import TrendingProductsReport from '../pages/Reports/TrendingProductsReport';
+import ItemsReport from '../pages/Reports/ItemsReport';
+import ProductPurchaseReport from '../pages/Reports/ProductPurchaseReport';
+import ProductSellReport from '../pages/Reports/ProductSellReport';
+import PurchasePaymentReport from '../pages/Reports/PurchasePaymentReport';
+import SellPaymentReport from '../pages/Reports/SellPaymentReport';
+import ExpenseReport from '../pages/Reports/ExpenseReport';
+import RegisterReport from '../pages/Reports/RegisterReport';
+import SalesRepresentativeReport from '../pages/Reports/SalesRepresentativeReport';
+import ActivityLog from '../pages/Reports/ActivityLog';
+
 export default function AppRoutes() {
   return (
     <MainLayout>
@@ -102,12 +141,51 @@ export default function AppRoutes() {
         <Route path="/sell/list-pos" element={<ListPOS />} />
         <Route path="/sell/pos" element={<POS />} />
         
-        {/* Other Routes */}
+        {/* Stock Transfers Routes */}
         <Route path="/stock-transfers" element={<StockTransfers />} />
+        <Route path="/stock-transfers/list" element={<ListStockTransfers />} />
+        <Route path="/stock-transfers/add" element={<AddStockTransfers />} />
+        
+        {/* Stock Adjustment Routes */}
         <Route path="/stock-adjustment" element={<StockAdjustment />} />
+        <Route path="/stock-adjustment/list" element={<ListStockAdjustments />} />
+        <Route path="/stock-adjustment/add" element={<AddStockAdjustments />} />
+        
+        {/* Expenses Routes */}
         <Route path="/expenses" element={<Expenses />} />
+        <Route path="/expenses/list" element={<ListExpenses />} />
+        <Route path="/expenses/add" element={<AddExpenses />} />
+        <Route path="/expenses/categories" element={<ExpensesCategories />} />
+        
+        {/* Payment Accounts Routes */}
         <Route path="/payment-accounts" element={<PaymentAccounts />} />
+        <Route path="/payment-accounts/list" element={<ListAccounts />} />
+        <Route path="/payment-accounts/balance-sheet" element={<BalanceSheet />} />
+        <Route path="/payment-accounts/trial-balance" element={<TrialBalance />} />
+        <Route path="/payment-accounts/cash-flow" element={<CashFlow />} />
+        <Route path="/payment-accounts/report" element={<PaymentAccountReport />} />
+        
+        {/* Reports Routes */}
         <Route path="/reports" element={<Reports />} />
+        <Route path="/reports/profit-loss" element={<ProfitLossReport />} />
+        <Route path="/reports/purchase-sale" element={<PurchaseSaleReport />} />
+        <Route path="/reports/tax" element={<TaxReport />} />
+        <Route path="/reports/supplier-customer" element={<SupplierCustomerReport />} />
+        <Route path="/reports/customer-groups" element={<CustomerGroupsReport />} />
+        <Route path="/reports/stock" element={<StockReport />} />
+        <Route path="/reports/stock-adjustment" element={<StockAdjustmentReport />} />
+        <Route path="/reports/trending-products" element={<TrendingProductsReport />} />
+        <Route path="/reports/items" element={<ItemsReport />} />
+        <Route path="/reports/product-purchase" element={<ProductPurchaseReport />} />
+        <Route path="/reports/product-sell" element={<ProductSellReport />} />
+        <Route path="/reports/purchase-payment" element={<PurchasePaymentReport />} />
+        <Route path="/reports/sell-payment" element={<SellPaymentReport />} />
+        <Route path="/reports/expense" element={<ExpenseReport />} />
+        <Route path="/reports/register" element={<RegisterReport />} />
+        <Route path="/reports/sales-representative" element={<SalesRepresentativeReport />} />
+        <Route path="/reports/activity-log" element={<ActivityLog />} />
+        
+        {/* Other Routes */}
         <Route path="/notification-templates" element={<NotificationTemplates />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/hrm" element={<HRM />} />
