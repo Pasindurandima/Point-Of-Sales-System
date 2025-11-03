@@ -1,0 +1,120 @@
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import MainLayout from '../layouts/MainLayout';
+import Dashboard from '../pages/Dashboard';
+import UserManagement from '../pages/UserManagement';
+import Contacts from '../pages/Contacts';
+import Products from '../pages/Products';
+import Purchases from '../pages/Purchases';
+import Sell from '../pages/Sell';
+import StockTransfers from '../pages/StockTransfers';
+import StockAdjustment from '../pages/StockAdjustment';
+import Expenses from '../pages/Expenses';
+import PaymentAccounts from '../pages/PaymentAccounts';
+import Reports from '../pages/Reports';
+import NotificationTemplates from '../pages/NotificationTemplates';
+import Settings from '../pages/Settings';
+import HRM from '../pages/HRM';
+import Essentials from '../pages/Essentials';
+import Profile from '../pages/Profile';
+import SignOut from '../pages/SignOut';
+
+// User Management
+import Users from '../pages/UserManagement/Users';
+import Roles from '../pages/UserManagement/Roles';
+import Agents from '../pages/UserManagement/Agents';
+
+// Contacts
+import Suppliers from '../pages/Contacts/Suppliers';
+import Customers from '../pages/Contacts/Customers';
+import CustomerGroups from '../pages/Contacts/CustomerGroups';
+import ImportContacts from '../pages/Contacts/ImportContacts';
+
+// Products
+import ListProduct from '../pages/Products/ListProduct';
+import AddProduct from '../pages/Products/AddProduct';
+import UpdatePrice from '../pages/Products/UpdatePrice';
+import PrintLabel from '../pages/Products/PrintLabel';
+import Variations from '../pages/Products/Variations';
+import ImportProducts from '../pages/Products/ImportProducts';
+import ImportOpeningStock from '../pages/Products/ImportOpeningStock';
+import SellingPriceGroup from '../pages/Products/SellingPriceGroup';
+import Units from '../pages/Products/Units';
+import Categories from '../pages/Products/Categories';
+import Brands from '../pages/Products/Brands';
+import Warranties from '../pages/Products/Warranties';
+
+// Purchases
+import ListPurchase from '../pages/Purchases/ListPurchase';
+import AddPurchase from '../pages/Purchases/AddPurchase';
+import ListPurchaseReturn from '../pages/Purchases/ListPurchaseReturn';
+
+// Sell
+import AllSales from '../pages/Sell/AllSales';
+import AddSale from '../pages/Sell/AddSale';
+import ListPOS from '../pages/Sell/ListPOS';
+import POS from '../pages/Sell/POS';
+
+export default function AppRoutes() {
+  return (
+    <MainLayout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        
+        {/* User Management Routes */}
+        <Route path="/user-management" element={<UserManagement />} />
+        <Route path="/user-management/users" element={<Users />} />
+        <Route path="/user-management/roles" element={<Roles />} />
+        <Route path="/user-management/agents" element={<Agents />} />
+        
+        {/* Contacts Routes */}
+        <Route path="/contacts" element={<Contacts />} />
+        <Route path="/contacts/suppliers" element={<Suppliers />} />
+        <Route path="/contacts/customers" element={<Customers />} />
+        <Route path="/contacts/customer-groups" element={<CustomerGroups />} />
+        <Route path="/contacts/import" element={<ImportContacts />} />
+        
+        {/* Products Routes */}
+        <Route path="/products" element={<Products />} />
+        <Route path="/products/list" element={<ListProduct />} />
+        <Route path="/products/add" element={<AddProduct />} />
+        <Route path="/products/update-price" element={<UpdatePrice />} />
+        <Route path="/products/print-label" element={<PrintLabel />} />
+        <Route path="/products/variations" element={<Variations />} />
+        <Route path="/products/import" element={<ImportProducts />} />
+        <Route path="/products/import-opening-stock" element={<ImportOpeningStock />} />
+        <Route path="/products/selling-price-group" element={<SellingPriceGroup />} />
+        <Route path="/products/units" element={<Units />} />
+        <Route path="/products/categories" element={<Categories />} />
+        <Route path="/products/brands" element={<Brands />} />
+        <Route path="/products/warranties" element={<Warranties />} />
+        
+        {/* Purchases Routes */}
+        <Route path="/purchases" element={<Purchases />} />
+        <Route path="/purchases/list" element={<ListPurchase />} />
+        <Route path="/purchases/add" element={<AddPurchase />} />
+        <Route path="/purchases/return" element={<ListPurchaseReturn />} />
+        
+        {/* Sell Routes */}
+        <Route path="/sell" element={<Sell />} />
+        <Route path="/sell/all-sales" element={<AllSales />} />
+        <Route path="/sell/add-sale" element={<AddSale />} />
+        <Route path="/sell/list-pos" element={<ListPOS />} />
+        <Route path="/sell/pos" element={<POS />} />
+        
+        {/* Other Routes */}
+        <Route path="/stock-transfers" element={<StockTransfers />} />
+        <Route path="/stock-adjustment" element={<StockAdjustment />} />
+        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/payment-accounts" element={<PaymentAccounts />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/notification-templates" element={<NotificationTemplates />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/hrm" element={<HRM />} />
+        <Route path="/essentials" element={<Essentials />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/signout" element={<SignOut />} />
+      </Routes>
+    </MainLayout>
+  );
+}
