@@ -185,7 +185,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-emerald-800 text-white min-h-screen p-4">
+    <aside className="w-54 bg-emerald-800 text-white min-h-screen p-4">
       <div className="text-xl font-bold mb-6">SecU Engineering</div>
 
       <nav className="flex flex-col space-y-1">
