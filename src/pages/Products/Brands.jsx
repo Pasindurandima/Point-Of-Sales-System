@@ -1,6 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { X, Tag, FileText, Image } from 'lucide-react';
 
 const Brands = () => {
+  const [showAddBrandModal, setShowAddBrandModal] = useState(false);
+  const [formData, setFormData] = useState({
+    brandName: '',
+    description: '',
+    website: '',
+    image: null
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Brand Data:', formData);
+    setShowAddBrandModal(false);
+    // API integration here
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -11,8 +35,12 @@ const Brands = () => {
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Brand List</h2>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
-            Add Brand
+          <button 
+            onClick={() => setShowAddBrandModal(true)}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <Tag className="w-4 h-4" />
+            <span>Add Brand</span>
           </button>
         </div>
 
@@ -58,6 +86,132 @@ const Brands = () => {
           </table>
         </div>
       </div>
+
+      {/* Add Brand Modal */}
+      {showAddBrandModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-teal-600 to-teal-700">
+              <div className="flex items-center space-x-2">
+                <Tag className="w-5 h-5 text-white" />
+                <h3 className="text-xl font-semibold text-white">Add New Brand</h3>
+              </div>
+              <button
+                onClick={() => setShowAddBrandModal(false)}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  {/* Brand Name */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Brand Name <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Tag className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        name="brandName"
+                        value={formData.brandName}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        placeholder="e.g., Samsung, Sony, Bosch"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Description <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        placeholder="Describe the brand"
+                        rows="3"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Website */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      name="website"
+                      value={formData.website}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="https://www.brand.com"
+                    />
+                  </div>
+
+                  {/* Brand Logo */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Brand Logo
+                    </label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                      <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <input
+                        type="file"
+                        name="image"
+                        accept="image/*"
+                        className="hidden"
+                        id="brandLogo"
+                      />
+                      <label
+                        htmlFor="brandLogo"
+                        className="text-sm text-teal-600 hover:text-teal-700 cursor-pointer font-semibold"
+                      >
+                        Click to upload logo
+                      </label>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 2MB</p>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex-shrink-0 border-t bg-gray-50 px-6 py-4">
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddBrandModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleSubmit}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors font-semibold flex items-center space-x-2"
+                >
+                  <Tag className="w-4 h-4" />
+                  <span>Create Brand</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
