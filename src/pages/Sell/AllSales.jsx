@@ -1,6 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ShoppingBag } from 'lucide-react';
 
 const AllSales = () => {
+  const navigate = useNavigate();
+
+  const handleAddSale = () => {
+    navigate('/sell/add-sale');
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -21,8 +29,12 @@ const AllSales = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
-            Add Sale
+          <button 
+            onClick={handleAddSale}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>Add Sale</span>
           </button>
         </div>
         

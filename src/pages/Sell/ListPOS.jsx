@@ -1,6 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Monitor } from 'lucide-react';
 
 const ListPOS = () => {
+  const navigate = useNavigate();
+
+  const handleOpenPOS = () => {
+    navigate('/sell/pos');
+  };
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -22,8 +29,12 @@ const ListPOS = () => {
               <option>Branch 1</option>
             </select>
           </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
-            Open POS
+          <button 
+            onClick={handleOpenPOS}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <Monitor className="w-4 h-4" />
+            <span>Open POS</span>
           </button>
         </div>
         
