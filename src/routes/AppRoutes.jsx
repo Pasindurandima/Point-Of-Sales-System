@@ -94,6 +94,15 @@ import RegisterReport from '../pages/Reports/RegisterReport';
 import SalesRepresentativeReport from '../pages/Reports/SalesRepresentativeReport';
 import ActivityLog from '../pages/Reports/ActivityLog';
 
+// Settings
+import BusinessSettings from '../pages/Settings/BusinessSettings';
+import BusinessLocations from '../pages/Settings/BusinessLocations';
+import InvoiceSettings from '../pages/Settings/InvoiceSettings';
+import BarcodeSettings from '../pages/Settings/BarcodeSettings';
+import ReceiptPrinters from '../pages/Settings/ReceiptPrinters';
+import TaxRates from '../pages/Settings/TaxRates';
+import PackageSubscription from '../pages/Settings/PackageSubscription';
+
 export default function AppRoutes() {
   return (
     <MainLayout>
@@ -188,6 +197,15 @@ export default function AppRoutes() {
         {/* Other Routes */}
         <Route path="/notification-templates" element={<NotificationTemplates />} />
         <Route path="/settings" element={<Settings />} />
+        
+        {/* Settings Routes */}
+        <Route path="/settings/business" element={<BusinessSettings />} />
+        <Route path="/settings/locations" element={<BusinessLocations />} />
+        <Route path="/settings/invoice" element={<InvoiceSettings />} />
+        <Route path="/settings/barcode" element={<BarcodeSettings />} />
+        <Route path="/settings/printers" element={<ReceiptPrinters />} />
+        <Route path="/settings/tax-rates" element={<TaxRates />} />
+        <Route path="/settings/subscription" element={<PackageSubscription />} />
         <Route path="/hrm" element={<HRM />} />
         <Route path="/essentials" element={<Essentials />} />
         <Route path="/profile" element={<Profile />} />
