@@ -1,18 +1,35 @@
 import React, { useState } from 'react';
-import { Search, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, Smartphone, Building2, Check, X, User, Calendar } from 'lucide-react';
 
 const POS = () => {
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [discount, setDiscount] = useState(0);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('CASH');
+  const [paidAmount, setPaidAmount] = useState('');
+  const [notes, setNotes] = useState('');
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastInvoice, setLastInvoice] = useState(null);
 
   // Dummy products data
   const dummyProducts = [
-    { id: 1, name: 'Dell Laptop', sku: 'LAP-001', price: 1200.00, stock: 50, image: '💻' },
-    { id: 2, name: 'HP Printer', sku: 'PRT-001', price: 350.00, stock: 30, image: '🖨️' },
-    { id: 3, name: 'Logitech Mouse', sku: 'MOU-001', price: 25.00, stock: 100, image: '🖱️' },
-    { id: 4, name: 'Samsung Monitor', sku: 'MON-001', price: 450.00, stock: 25, image: '🖥️' },
-    { id: 5, name: 'Wireless Keyboard', sku: 'KEY-001', price: 75.00, stock: 60, image: '⌨️' },
-    { id: 6, name: 'USB Cable', sku: 'CAB-001', price: 10.00, stock: 200, image: '🔌' },
+    { id: 1, name: 'Dell Laptop', sku: 'LAP-001', price: 1200.00, stock: 50, image: '💻', taxRate: 18 },
+    { id: 2, name: 'HP Printer', sku: 'PRT-001', price: 350.00, stock: 30, image: '🖨️', taxRate: 18 },
+    { id: 3, name: 'Logitech Mouse', sku: 'MOU-001', price: 25.00, stock: 100, image: '🖱️', taxRate: 18 },
+    { id: 4, name: 'Samsung Monitor', sku: 'MON-001', price: 450.00, stock: 25, image: '🖥️', taxRate: 18 },
+    { id: 5, name: 'Wireless Keyboard', sku: 'KEY-001', price: 75.00, stock: 60, image: '⌨️', taxRate: 18 },
+    { id: 6, name: 'USB Cable', sku: 'CAB-001', price: 10.00, stock: 200, image: '🔌', taxRate: 18 },
+  ];
+
+  // Dummy customers data
+  const dummyCustomers = [
+    { id: 1, name: 'John Doe', email: 'john@example.com', phone: '+1234567890' },
+    { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '+1234567891' },
+    { id: 3, name: 'Robert Johnson', email: 'robert@example.com', phone: '+1234567892' },
+    { id: 4, name: 'Emily Davis', email: 'emily@example.com', phone: '+1234567893' },
   ];
 
   const addToCart = (product) => {
@@ -42,6 +59,9 @@ const POS = () => {
 
   const clearCart = () => {
     setCart([]);
+    setDiscount(0);
+    setNotes('');
+    setPaidAmount('');
   };
 
   const calculateSubtotal = () => {
@@ -49,11 +69,95 @@ const POS = () => {
   };
 
   const calculateTax = () => {
-    return calculateSubtotal() * 0.18; // 18% tax
+    return cart.reduce((sum, item) => {
+      const itemSubtotal = item.price * item.quantity;
+      return sum + (itemSubtotal * item.taxRate / 100);
+    }, 0);
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
+    return calculateSubtotal() + calculateTax() - discount;
+  };
+
+  const calculateChange = () => {
+    const paid = parseFloat(paidAmount) || 0;
+    return paid >= calculateTotal() ? paid - calculateTotal() : 0;
+  };
+
+  const handleCompleteSale = () => {
+    if (cart.length === 0) {
+      alert('Cart is empty! Please add items to proceed.');
+      return;
+    }
+    setShowPaymentModal(true);
+  };
+
+  const handlePayment = () => {
+    const total = calculateTotal();
+    const paid = parseFloat(paidAmount) || 0;
+
+    if (paymentMethod === 'CASH' && paid < total) {
+      alert('Insufficient payment! Amount paid must be greater than or equal to total.');
+      return;
+    }
+
+    // Generate invoice number
+    const invoiceNumber = `INV${new Date().getTime()}`;
+    
+    // Prepare sale data
+    const saleData = {
+      invoiceNumber,
+      customer: selectedCustomer,
+      saleDate: new Date().toISOString(),
+      items: cart.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        sku: item.sku,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        taxRate: item.taxRate,
+        subtotal: item.price * item.quantity,
+        taxAmount: (item.price * item.quantity * item.taxRate / 100),
+        total: (item.price * item.quantity) + (item.price * item.quantity * item.taxRate / 100)
+      })),
+      subtotal: calculateSubtotal(),
+      tax: calculateTax(),
+      discount: discount,
+      total: total,
+      paymentMethod: paymentMethod,
+      paidAmount: paid,
+      changeAmount: calculateChange(),
+      notes: notes
+    };
+
+    console.log('Sale Completed:', saleData);
+    
+    // Store last invoice for success modal
+    setLastInvoice(saleData);
+    
+    // Show success modal
+    setShowPaymentModal(false);
+    setShowSuccessModal(true);
+    
+    // Reset form after 3 seconds
+    setTimeout(() => {
+      setShowSuccessModal(false);
+      resetSale();
+    }, 3000);
+  };
+
+  const resetSale = () => {
+    setCart([]);
+    setDiscount(0);
+    setNotes('');
+    setPaidAmount('');
+    setPaymentMethod('CASH');
+    setSelectedCustomer(null);
+  };
+
+  const selectCustomer = (customer) => {
+    setSelectedCustomer(customer);
+    setShowCustomerModal(false);
   };
 
   const filteredProducts = dummyProducts.filter(product =>
@@ -61,17 +165,29 @@ const POS = () => {
     product.sku.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const paymentMethods = [
+    { id: 'CASH', name: 'Cash', icon: Banknote, color: 'bg-green-500' },
+    { id: 'CARD', name: 'Card', icon: CreditCard, color: 'bg-blue-500' },
+
+  ];
+
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Point of Sale (POS)</h1>
-        <p className="text-gray-600 mt-1">Add products to cart and complete the sale</p>
+    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
+      <div className="px-6 py-4 flex items-center justify-between bg-white shadow-sm">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Point of Sale (POS)</h1>
+          <p className="text-gray-600 text-sm">Add products to cart and complete the sale</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-gray-500">Date: {new Date().toLocaleDateString()}</p>
+          <p className="text-xs text-gray-500">Time: {new Date().toLocaleTimeString()}</p>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 overflow-hidden">
         {/* Product Selection - Left Side */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
-          <div className="mb-4">
+        <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col overflow-hidden">
+          <div className="mb-3 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
               <input
@@ -79,51 +195,66 @@ const POS = () => {
                 placeholder="Search products by name, SKU, or barcode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-lg"
+                className="w-full pl-10 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {filteredProducts.map(product => (
-              <div 
-                key={product.id}
-                onClick={() => addToCart(product)}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-teal-500 transition-all cursor-pointer"
-              >
-                <div className="text-center">
-                  <div className="w-full h-32 bg-gradient-to-br from-teal-50 to-blue-50 rounded mb-2 flex items-center justify-center text-5xl">
-                    {product.image}
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {filteredProducts.map(product => (
+                <div 
+                  key={product.id}
+                  onClick={() => addToCart(product)}
+                  className="border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-teal-500 transition-all cursor-pointer"
+                >
+                  <div className="text-center">
+                    <div className="w-full h-24 bg-gradient-to-br from-teal-50 to-blue-50 rounded mb-2 flex items-center justify-center text-4xl">
+                      {product.image}
+                    </div>
+                    <h3 className="font-semibold text-xs mb-1">{product.name}</h3>
+                    <p className="text-xs text-gray-500 mb-1">{product.sku}</p>
+                    <p className="text-teal-600 font-bold text-sm">Rs {product.price.toFixed(2)}</p>
+                    <p className={`text-xs mt-1 ${product.stock > 20 ? 'text-green-600' : 'text-orange-600'}`}>
+                      Stock: {product.stock}
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm mb-1">{product.name}</h3>
-                  <p className="text-xs text-gray-500 mb-2">{product.sku}</p>
-                  <p className="text-teal-600 font-bold text-lg">Rs {product.price.toFixed(2)}</p>
-                  <p className={`text-xs mt-1 ${product.stock > 20 ? 'text-green-600' : 'text-orange-600'}`}>
-                    Stock: {product.stock}
-                  </p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Cart - Right Side */}
-        <div className="bg-white rounded-lg shadow-md p-6 flex flex-col h-[calc(100vh-180px)]">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Current Sale</h2>
-            <ShoppingCart className="w-6 h-6 text-teal-600" />
+        <div className="bg-white rounded-lg shadow-md p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-3 flex-shrink-0">
+            <h2 className="text-lg font-semibold">Current Sale</h2>
+            <ShoppingCart className="w-5 h-5 text-teal-600" />
           </div>
           
-          <div className="mb-4">
-            <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>Walk-in Customer</option>
-              <option>John Doe</option>
-              <option>Jane Smith</option>
-            </select>
+          <div className="mb-4 flex-shrink-0">
+            <button
+              onClick={() => setShowCustomerModal(true)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 text-left flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-2">
+                <User className="w-4 h-4 text-gray-400" />
+                <span className={selectedCustomer ? 'text-gray-800' : 'text-gray-500'}>
+                  {selectedCustomer ? selectedCustomer.name : 'Walk-in Customer'}
+                </span>
+              </div>
+              <span className="text-teal-600 text-sm">Change</span>
+            </button>
+            {selectedCustomer && (
+              <div className="mt-2 text-xs text-gray-600 px-2">
+                <p>📧 {selectedCustomer.email}</p>
+                <p>📱 {selectedCustomer.phone}</p>
+              </div>
+            )}
           </div>
 
           {/* Cart Items */}
-          <div className="flex-1 border-t border-b py-4 mb-4 overflow-y-auto">
+          <div className="flex-1 border-t border-b py-4 mb-4 overflow-y-auto min-h-0">
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
                 <ShoppingCart className="w-16 h-16 mb-2" />
@@ -174,37 +305,54 @@ const POS = () => {
           </div>
 
           {/* Summary */}
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-4 flex-shrink-0">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Subtotal:</span>
               <span className="font-semibold">Rs {calculateSubtotal().toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Tax (18%):</span>
+              <span className="text-gray-600">Tax:</span>
               <span className="font-semibold">Rs {calculateTax().toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-xl pt-2 border-t">
-              <span className="font-bold">Total:</span>
-              <span className="font-bold text-teal-600">Rs {calculateTotal().toFixed(2)}</span>
+            
+            {/* Discount Input */}
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">Discount:</span>
+              <input
+                type="number"
+                min="0"
+                max={calculateSubtotal() + calculateTax()}
+                value={discount}
+                onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                className="w-24 px-2 py-1 border border-gray-300 rounded text-right focus:ring-2 focus:ring-teal-500"
+                placeholder="0.00"
+              />
+            </div>
+            
+            <div className="flex justify-between text-lg pt-2 border-t font-bold">
+              <span>Total:</span>
+              <span className="text-teal-600">Rs {calculateTotal().toFixed(2)}</span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-2">
+          <div className="space-y-2 flex-shrink-0">
             <button 
+              onClick={handleCompleteSale}
               disabled={cart.length === 0}
-              className={`w-full px-4 py-3 rounded-lg transition-colors font-semibold ${
+              className={`w-full px-4 py-3 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2 ${
                 cart.length === 0 
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                   : 'bg-teal-600 hover:bg-teal-700 text-white'
               }`}
             >
-              Complete Sale
+              <Check className="w-5 h-5" />
+              <span>Complete Sale</span>
             </button>
             <div className="grid grid-cols-2 gap-2">
               <button 
                 disabled={cart.length === 0}
-                className={`px-4 py-2 rounded-lg transition-colors ${
+                className={`px-4 py-2 rounded-lg transition-colors text-sm ${
                   cart.length === 0 
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -215,7 +363,7 @@ const POS = () => {
               <button 
                 onClick={clearCart}
                 disabled={cart.length === 0}
-                className={`px-4 py-2 rounded-lg transition-colors ${
+                className={`px-4 py-2 rounded-lg transition-colors text-sm ${
                   cart.length === 0 
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
                     : 'bg-red-600 hover:bg-red-700 text-white'
@@ -227,6 +375,223 @@ const POS = () => {
           </div>
         </div>
       </div>
+
+      {/* Customer Selection Modal */}
+      {showCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md m-4">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Select Customer</h3>
+              <button
+                onClick={() => setShowCustomerModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 max-h-96 overflow-y-auto">
+              <button
+                onClick={() => selectCustomer(null)}
+                className={`w-full p-3 mb-2 border rounded-lg text-left hover:border-teal-500 transition-colors ${
+                  !selectedCustomer ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
+                }`}
+              >
+                <p className="font-semibold">Walk-in Customer</p>
+                <p className="text-sm text-gray-500">No customer information</p>
+              </button>
+              {dummyCustomers.map(customer => (
+                <button
+                  key={customer.id}
+                  onClick={() => selectCustomer(customer)}
+                  className={`w-full p-3 mb-2 border rounded-lg text-left hover:border-teal-500 transition-colors ${
+                    selectedCustomer?.id === customer.id ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
+                  }`}
+                >
+                  <p className="font-semibold">{customer.name}</p>
+                  <p className="text-sm text-gray-600">{customer.email}</p>
+                  <p className="text-sm text-gray-500">{customer.phone}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+     
+ {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-teal-600 to-teal-700 flex-shrink-0">
+              <h3 className="text-xl font-semibold text-white">Complete Payment</h3>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+              {/* Payment Summary */}
+              <div className="bg-white rounded-lg p-4 mb-6 shadow-md border border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase">Payment Summary</h4>
+                <div className="flex justify-between mb-2 text-sm">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-semibold">Rs {calculateSubtotal().toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between mb-2 text-sm">
+                  <span className="text-gray-600">Tax (18%):</span>
+                  <span className="font-semibold">Rs {calculateTax().toFixed(2)}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between mb-2 text-green-600 text-sm">
+                    <span>Discount:</span>
+                    <span className="font-semibold">- Rs {discount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-3 border-t text-lg font-bold mt-2">
+                  <span>Total:</span>
+                  <span className="text-teal-600">Rs {calculateTotal().toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Payment Method Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Select Payment Method
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {paymentMethods.map(method => {
+                    const Icon = method.icon;
+                    return (
+                      <button
+                        key={method.id}
+                        onClick={() => setPaymentMethod(method.id)}
+                        className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center space-y-2 ${
+                          paymentMethod === method.id
+                            ? `${method.color} border-transparent text-white`
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <Icon className="w-6 h-6" />
+                        <span className="text-sm font-semibold">{method.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Amount Paid Input (for Cash) */}
+              {paymentMethod === 'CASH' && (
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Amount Paid
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={paidAmount}
+                    onChange={(e) => setPaidAmount(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-lg"
+                    placeholder="0.00"
+                    autoFocus
+                  />
+                  {paidAmount && parseFloat(paidAmount) >= calculateTotal() && (
+                    <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-semibold text-green-700">Change:</span>
+                        <span className="text-xl font-bold text-green-600">
+                          Rs {calculateChange().toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Notes */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  rows="3"
+                  placeholder="Add any notes about this sale..."
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons - Fixed at bottom */}
+            <div className="flex-shrink-0 border-t bg-gray-50 px-6 py-4">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePayment}
+                  className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2"
+                >
+                  <Check className="w-5 h-5" />
+                  <span>Confirm Payment</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && lastInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Check className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-1">Payment Successful!</h3>
+              <p className="text-gray-600 text-sm mb-4">Transaction completed successfully</p>
+              
+              <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                <p className="text-xs text-gray-500 mb-1">Invoice Number</p>
+                <p className="text-base font-bold text-teal-600">{lastInvoice.invoiceNumber}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 text-left mb-4">
+                <div className="bg-gray-50 rounded p-2">
+                  <p className="text-xs text-gray-500 mb-1">Total Amount</p>
+                  <p className="font-bold text-sm">Rs {lastInvoice.total.toFixed(2)}</p>
+                </div>
+                <div className="bg-gray-50 rounded p-2">
+                  <p className="text-xs text-gray-500 mb-1">Payment Method</p>
+                  <p className="font-bold text-sm">{lastInvoice.paymentMethod}</p>
+                </div>
+                {lastInvoice.paymentMethod === 'CASH' && (
+                  <>
+                    <div className="bg-gray-50 rounded p-2">
+                      <p className="text-xs text-gray-500 mb-1">Amount Paid</p>
+                      <p className="font-bold text-sm">Rs {lastInvoice.paidAmount.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-green-50 rounded p-2">
+                      <p className="text-xs text-gray-500 mb-1">Change</p>
+                      <p className="font-bold text-sm text-green-600">Rs {lastInvoice.changeAmount.toFixed(2)}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-500">Closing in 3 seconds...</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
