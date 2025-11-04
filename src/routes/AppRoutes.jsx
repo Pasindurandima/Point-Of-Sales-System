@@ -54,6 +54,14 @@ import AllSales from '../pages/Sell/AllSales';
 import AddSale from '../pages/Sell/AddSale';
 import ListPOS from '../pages/Sell/ListPOS';
 import POS from '../pages/Sell/POS';
+import AddDraft from '../pages/Sell/AddDraft';
+import ListDraft from '../pages/Sell/ListDraft';
+import AddQuotation from '../pages/Sell/AddQuotation';
+import ListQuotations from '../pages/Sell/ListQuotations';
+import ListSellReturn from '../pages/Sell/ListSellReturn';
+import Shipments from '../pages/Sell/Shipments';
+import Discounts from '../pages/Sell/Discounts';
+import ImportSales from '../pages/Sell/ImportSales';
 
 // Stock Transfers
 import ListStockTransfers from '../pages/StockTransfers/ListStockTransfers';
@@ -149,6 +157,14 @@ export default function AppRoutes() {
         <Route path="/sell/add-sale" element={<AddSale />} />
         <Route path="/sell/list-pos" element={<ListPOS />} />
         <Route path="/sell/pos" element={<POS />} />
+        <Route path="/sell/add-draft" element={<AddDraft />} />
+        <Route path="/sell/list-draft" element={<ListDraft />} />
+        <Route path="/sell/add-quotation" element={<AddQuotation />} />
+        <Route path="/sell/list-quotations" element={<ListQuotations />} />
+        <Route path="/sell/list-sell-return" element={<ListSellReturn />} />
+        <Route path="/sell/shipments" element={<Shipments />} />
+        <Route path="/sell/discounts" element={<Discounts />} />
+        <Route path="/sell/import-sales" element={<ImportSales />} />
         
         {/* Stock Transfers Routes */}
         <Route path="/stock-transfers" element={<StockTransfers />} />
