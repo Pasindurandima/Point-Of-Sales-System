@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   Users, TrendingUp, Grid, Bell, LogOut, Calendar, Database, 
@@ -6,6 +7,7 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [hoveredCard, setHoveredCard] = useState(null);
 
   // Sample data for the chart
@@ -127,7 +129,10 @@ const Dashboard = () => {
             <button className="p-2 bg-pink-600 rounded-lg hover:bg-pink-700 transition-colors">
               <Grid className="w-5 h-5 text-white" />
             </button>
-            <button className="p-2 bg-pink-600 rounded-lg hover:bg-pink-700 transition-colors">
+            <button 
+              onClick={() => navigate('/sell/pos')}
+              className="p-2 bg-pink-600 rounded-lg hover:bg-pink-700 transition-colors"
+            >
               <span className="text-white font-semibold px-1">POS</span>
             </button>
             <button className="p-2 bg-pink-600 rounded-lg hover:bg-pink-700 transition-colors">
