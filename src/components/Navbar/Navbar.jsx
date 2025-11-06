@@ -1,56 +1,75 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Monitor, Bell, Download, User, Settings, LogOut, ChevronDown, FileText, ShoppingCart, Package, DollarSign, TrendingUp, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { notificationService } from '../../services/apiService';
 
 export default function Navbar() {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'order',
-      title: 'New Order Received',
-      message: 'Order #12345 from John Doe',
-      time: '5 min ago',
-      read: false,
-      icon: ShoppingCart
-    },
-    {
-      id: 2,
-      type: 'stock',
-      title: 'Low Stock Alert',
-      message: 'Product "Laptop HP" is running low',
-      time: '1 hour ago',
-      read: false,
-      icon: Package
-    },
-    {
-      id: 3,
-      type: 'payment',
-      title: 'Payment Received',
-      message: '$2,500 payment confirmed',
-      time: '2 hours ago',
-      read: true,
-      icon: DollarSign
-    },
-    {
-      id: 4,
-      type: 'report',
-      title: 'Daily Report Ready',
-      message: 'Sales report for today is available',
-      time: '3 hours ago',
-      read: true,
-      icon: TrendingUp
-    }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
   const downloadRef = useRef(null);
 
+  // Fetch notifications from backend
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching notifications from backend...');
+      const data = await notificationService.getAll();
+      console.log('Notifications received:', data);
+      
+      // Map backend data to include icons based on type
+      const mappedNotifications = data.map(notification => {
+        let icon;
+        switch(notification.type?.toLowerCase()) {
+          case 'order':
+          case 'sale':
+            icon = ShoppingCart;
+            break;
+          case 'stock':
+          case 'inventory':
+            icon = Package;
+            break;
+          case 'payment':
+            icon = DollarSign;
+            break;
+          case 'report':
+            icon = TrendingUp;
+            break;
+          default:
+            icon = Bell;
+        }
+        return { ...notification, icon };
+      });
+      
+      setNotifications(mappedNotifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error.message);
+      // Keep empty array on error
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Load notifications on mount and set up auto-refresh
+  useEffect(() => {
+    fetchNotifications();
+    
+    // Auto-refresh notifications every 30 seconds
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -73,18 +92,33 @@ export default function Navbar() {
     navigate('/sell/pos');
   };
 
-  const handleMarkAsRead = (id) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const handleMarkAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
-  const handleDeleteNotification = (id) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const handleDeleteNotification = async (id) => {
+    try {
+      await notificationService.delete(id);
+      setNotifications(notifications.filter(n => n.id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
   const handleDownload = (type) => {
@@ -216,7 +250,12 @@ export default function Navbar() {
                 )}
               </div>
               <div className="max-h-96 overflow-y-auto">
-                {notifications.length === 0 ? (
+                {loading ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p>Loading notifications...</p>
+                  </div>
+                ) : notifications.length === 0 ? (
                   <div className="p-8 text-center text-gray-500">
                     <Bell className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                     <p>No notifications</p>
@@ -224,6 +263,24 @@ export default function Navbar() {
                 ) : (
                   notifications.map((notification) => {
                     const Icon = notification.icon;
+                    
+                    // Format time display
+                    const formatTime = (timestamp) => {
+                      if (!timestamp) return 'Just now';
+                      const date = new Date(timestamp);
+                      const now = new Date();
+                      const diff = now - date;
+                      const minutes = Math.floor(diff / 60000);
+                      const hours = Math.floor(diff / 3600000);
+                      const days = Math.floor(diff / 86400000);
+                      
+                      if (minutes < 1) return 'Just now';
+                      if (minutes < 60) return `${minutes} min ago`;
+                      if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+                      if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+                      return date.toLocaleDateString();
+                    };
+                    
                     return (
                       <div
                         key={notification.id}
@@ -233,15 +290,15 @@ export default function Navbar() {
                       >
                         <div className="flex items-start gap-3">
                           <div className={`p-2 rounded-lg ${
-                            notification.type === 'order' ? 'bg-blue-100' :
-                            notification.type === 'stock' ? 'bg-orange-100' :
-                            notification.type === 'payment' ? 'bg-green-100' :
+                            notification.type?.toLowerCase() === 'order' || notification.type?.toLowerCase() === 'sale' ? 'bg-blue-100' :
+                            notification.type?.toLowerCase() === 'stock' || notification.type?.toLowerCase() === 'inventory' ? 'bg-orange-100' :
+                            notification.type?.toLowerCase() === 'payment' ? 'bg-green-100' :
                             'bg-purple-100'
                           }`}>
                             <Icon className={`w-4 h-4 ${
-                              notification.type === 'order' ? 'text-blue-600' :
-                              notification.type === 'stock' ? 'text-orange-600' :
-                              notification.type === 'payment' ? 'text-green-600' :
+                              notification.type?.toLowerCase() === 'order' || notification.type?.toLowerCase() === 'sale' ? 'text-blue-600' :
+                              notification.type?.toLowerCase() === 'stock' || notification.type?.toLowerCase() === 'inventory' ? 'text-orange-600' :
+                              notification.type?.toLowerCase() === 'payment' ? 'text-green-600' :
                               'text-purple-600'
                             }`} />
                           </div>
@@ -255,7 +312,7 @@ export default function Navbar() {
                                   {notification.message}
                                 </p>
                                 <p className="text-xs text-gray-400 mt-1">
-                                  {notification.time}
+                                  {formatTime(notification.createdAt || notification.timestamp)}
                                 </p>
                               </div>
                               <div className="flex gap-1">

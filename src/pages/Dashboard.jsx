@@ -1,71 +1,178 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   Users, TrendingUp, Grid, Bell, LogOut, Calendar, Database, 
   FileText, Wallet, RotateCcw, DollarSign, Package
 } from 'lucide-react';
+import { dashboardService, saleService, productService, purchaseService, expenseService } from '../services/apiService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [hoveredCard, setHoveredCard] = useState(null);
-
-  // Sample data for the chart
-  const salesData = [
+  const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState({
+    totalSales: 0,
+    netProfit: 0,
+    invoiceDue: 0,
+    totalPurchase: 0,
+    totalExpense: 0,
+    productCount: 0,
+    customerCount: 0,
+    supplierCount: 0
+  });
+  const [salesData, setSalesData] = useState([
     { month: 'Jan-2025', sales: 0 },
     { month: 'Feb-2025', sales: 0 },
-    { month: 'Mar-2025', sales: 5000 },
-    { month: 'Apr-2025', sales: 10000 },
-    { month: 'May-2025', sales: 55655 },
-    { month: 'Jun-2025', sales: 52000 },
+    { month: 'Mar-2025', sales: 0 },
+    { month: 'Apr-2025', sales: 0 },
+    { month: 'May-2025', sales: 0 },
+    { month: 'Jun-2025', sales: 0 },
     { month: 'Jul-2025', sales: 0 },
     { month: 'Aug-2025', sales: 0 },
     { month: 'Sep-2025', sales: 0 },
     { month: 'Oct-2025', sales: 0 },
     { month: 'Nov-2025', sales: 0 },
     { month: 'Dec-2025', sales: 0 },
-  ];
+  ]);
+  const [recentSales, setRecentSales] = useState([]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching dashboard data from backend...');
+      
+      // Fetch all data in parallel with better error handling
+      const [sales, products, purchases, expenses] = await Promise.all([
+        saleService.getAll().catch((err) => {
+          console.error('Error fetching sales:', err.message);
+          return [];
+        }),
+        productService.getAll().catch((err) => {
+          console.error('Error fetching products:', err.message);
+          return [];
+        }),
+        purchaseService.getAll().catch((err) => {
+          console.error('Error fetching purchases:', err.message);
+          return [];
+        }),
+        expenseService.getAll().catch((err) => {
+          console.error('Error fetching expenses:', err.message);
+          return [];
+        })
+      ]);
+
+      console.log('Data received:', { 
+        sales: sales.length, 
+        products: products.length, 
+        purchases: purchases.length, 
+        expenses: expenses.length 
+      });
+
+      // Calculate statistics
+      const totalSales = sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
+      const totalPurchase = purchases.reduce((sum, purchase) => sum + (purchase.totalAmount || 0), 0);
+      const totalExpense = expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+      const netProfit = totalSales - totalPurchase - totalExpense;
+      const invoiceDue = sales
+        .filter(sale => sale.paymentStatus === 'PENDING' || sale.paymentStatus === 'PARTIAL')
+        .reduce((sum, sale) => sum + ((sale.totalAmount || 0) - (sale.paidAmount || 0)), 0);
+
+      const newStatistics = {
+        totalSales,
+        netProfit,
+        invoiceDue,
+        totalPurchase,
+        totalExpense,
+        productCount: products.length,
+        customerCount: 0,
+        supplierCount: 0
+      };
+
+      console.log('Calculated statistics:', newStatistics);
+      setStatistics(newStatistics);
+
+      // Process sales data for chart (group by month)
+      const monthlySales = {};
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      
+      sales.forEach(sale => {
+        if (sale.saleDate) {
+          const date = new Date(sale.saleDate);
+          const monthKey = `${months[date.getMonth()]}-${date.getFullYear()}`;
+          monthlySales[monthKey] = (monthlySales[monthKey] || 0) + (sale.totalAmount || 0);
+        }
+      });
+
+      // Update sales data for current year
+      const currentYear = new Date().getFullYear();
+      const updatedSalesData = months.map(month => ({
+        month: `${month}-${currentYear}`,
+        sales: monthlySales[`${month}-${currentYear}`] || 0
+      }));
+
+      setSalesData(updatedSalesData);
+
+      // Get recent sales (last 10)
+      const sortedSales = [...sales]
+        .sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate))
+        .slice(0, 10);
+      setRecentSales(sortedSales);
+
+      console.log('Dashboard data updated successfully');
+
+    } catch (error) {
+      console.error('Critical error fetching dashboard data:', error);
+      // Keep loading as false to show the dashboard even with errors
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const dashboardCards = [
     { 
       title: 'TOTAL SALES', 
-      value: 'Rs 0.00', 
+      value: `Rs ${statistics.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: FileText, 
       color: 'bg-green-600',
       iconBg: 'bg-green-100'
     },
     { 
-      title: 'NET', 
-      value: 'Rs 0.00', 
+      title: 'NET PROFIT', 
+      value: `Rs ${statistics.netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: Database, 
-      color: 'bg-purple-600',
-      iconBg: 'bg-purple-100',
+      color: statistics.netProfit >= 0 ? 'bg-purple-600' : 'bg-red-600',
+      iconBg: statistics.netProfit >= 0 ? 'bg-purple-100' : 'bg-red-100',
       badge: true
     },
     { 
       title: 'INVOICE DUE', 
-      value: 'Rs 0.00', 
+      value: `Rs ${statistics.invoiceDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: FileText, 
       color: 'bg-orange-600',
       iconBg: 'bg-orange-100'
     },
     { 
       title: 'TOTAL PURCHASE', 
-      value: 'Rs 0.00', 
+      value: `Rs ${statistics.totalPurchase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: Package, 
-      color: 'bg-green-600',
-      iconBg: 'bg-green-100'
+      color: 'bg-blue-600',
+      iconBg: 'bg-blue-100'
     },
     { 
-      title: 'PURCHASE DUE', 
-      value: 'Rs 0.00', 
-      icon: Wallet, 
-      color: 'bg-orange-600',
-      iconBg: 'bg-orange-100'
+      title: 'PRODUCT COUNT', 
+      value: statistics.productCount, 
+      icon: Package, 
+      color: 'bg-teal-600',
+      iconBg: 'bg-teal-100'
     },
     { 
       title: 'EXPENSE', 
-      value: 'Rs 0.00', 
+      value: `Rs ${statistics.totalExpense.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: DollarSign, 
       color: 'bg-red-600',
       iconBg: 'bg-red-100'
@@ -110,6 +217,17 @@ const Dashboard = () => {
     }
     return null;
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-semibold">Loading Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-100">

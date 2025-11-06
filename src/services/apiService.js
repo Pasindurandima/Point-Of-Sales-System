@@ -1,0 +1,333 @@
+import api from '../config/api';
+
+// Auth Services
+export const authService = {
+  login: async (credentials) => {
+    const response = await api.post('/auth/login', credentials);
+    if (response.data.token) {
+      localStorage.setItem('authToken', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+
+  register: async (userData) => {
+    const response = await api.post('/auth/register', userData);
+    return response.data;
+  },
+
+  logout: () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+  },
+
+  getCurrentUser: () => {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  },
+};
+
+// Product Services
+export const productService = {
+  getAll: async () => {
+    const response = await api.get('/products');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/products/${id}`);
+    return response.data;
+  },
+
+  create: async (productData) => {
+    const response = await api.post('/products', productData);
+    return response.data;
+  },
+
+  update: async (id, productData) => {
+    const response = await api.put(`/products/${id}`, productData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/products/${id}`);
+    return response.data;
+  },
+
+  search: async (searchTerm) => {
+    const response = await api.get(`/products/search?query=${searchTerm}`);
+    return response.data;
+  },
+
+  getLowStock: async () => {
+    const response = await api.get('/products/low-stock');
+    return response.data;
+  },
+};
+
+// Sale Services
+export const saleService = {
+  getAll: async () => {
+    const response = await api.get('/sales');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/sales/${id}`);
+    return response.data;
+  },
+
+  create: async (saleData) => {
+    const response = await api.post('/sales', saleData);
+    return response.data;
+  },
+
+  update: async (id, saleData) => {
+    const response = await api.put(`/sales/${id}`, saleData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/sales/${id}`);
+    return response.data;
+  },
+
+  getToday: async () => {
+    const response = await api.get('/sales/today');
+    return response.data;
+  },
+
+  getTotalRevenue: async () => {
+    const response = await api.get('/sales/revenue');
+    return response.data;
+  },
+};
+
+// Customer Services
+export const customerService = {
+  getAll: async () => {
+    const response = await api.get('/customers');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/customers/${id}`);
+    return response.data;
+  },
+
+  create: async (customerData) => {
+    const response = await api.post('/customers', customerData);
+    return response.data;
+  },
+
+  update: async (id, customerData) => {
+    const response = await api.put(`/customers/${id}`, customerData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/customers/${id}`);
+    return response.data;
+  },
+
+  search: async (searchTerm) => {
+    const response = await api.get(`/customers/search?query=${searchTerm}`);
+    return response.data;
+  },
+};
+
+// Supplier Services
+export const supplierService = {
+  getAll: async () => {
+    const response = await api.get('/suppliers');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/suppliers/${id}`);
+    return response.data;
+  },
+
+  create: async (supplierData) => {
+    const response = await api.post('/suppliers', supplierData);
+    return response.data;
+  },
+
+  update: async (id, supplierData) => {
+    const response = await api.put(`/suppliers/${id}`, supplierData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/suppliers/${id}`);
+    return response.data;
+  },
+};
+
+// Purchase Services
+export const purchaseService = {
+  getAll: async () => {
+    const response = await api.get('/purchases');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/purchases/${id}`);
+    return response.data;
+  },
+
+  create: async (purchaseData) => {
+    const response = await api.post('/purchases', purchaseData);
+    return response.data;
+  },
+
+  update: async (id, purchaseData) => {
+    const response = await api.put(`/purchases/${id}`, purchaseData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/purchases/${id}`);
+    return response.data;
+  },
+};
+
+// Category Services
+export const categoryService = {
+  getAll: async () => {
+    const response = await api.get('/categories');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/categories/${id}`);
+    return response.data;
+  },
+
+  create: async (categoryData) => {
+    const response = await api.post('/categories', categoryData);
+    return response.data;
+  },
+
+  update: async (id, categoryData) => {
+    const response = await api.put(`/categories/${id}`, categoryData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/categories/${id}`);
+    return response.data;
+  },
+};
+
+// Brand Services
+export const brandService = {
+  getAll: async () => {
+    const response = await api.get('/brands');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/brands/${id}`);
+    return response.data;
+  },
+
+  create: async (brandData) => {
+    const response = await api.post('/brands', brandData);
+    return response.data;
+  },
+
+  update: async (id, brandData) => {
+    const response = await api.put(`/brands/${id}`, brandData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/brands/${id}`);
+    return response.data;
+  },
+};
+
+// Expense Services
+export const expenseService = {
+  getAll: async () => {
+    const response = await api.get('/expenses');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/expenses/${id}`);
+    return response.data;
+  },
+
+  create: async (expenseData) => {
+    const response = await api.post('/expenses', expenseData);
+    return response.data;
+  },
+
+  update: async (id, expenseData) => {
+    const response = await api.put(`/expenses/${id}`, expenseData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/expenses/${id}`);
+    return response.data;
+  },
+
+  getTotalExpenses: async () => {
+    const response = await api.get('/expenses/total');
+    return response.data;
+  },
+};
+
+// Dashboard Statistics
+export const dashboardService = {
+  getStatistics: async () => {
+    const response = await api.get('/dashboard/statistics');
+    return response.data;
+  },
+
+  getRecentSales: async () => {
+    const response = await api.get('/dashboard/recent-sales');
+    return response.data;
+  },
+
+  getTopProducts: async () => {
+    const response = await api.get('/dashboard/top-products');
+    return response.data;
+  },
+};
+
+// Notification Services
+export const notificationService = {
+  getAll: async () => {
+    const response = await api.get('/notifications');
+    return response.data;
+  },
+
+  getUnread: async () => {
+    const response = await api.get('/notifications/unread');
+    return response.data;
+  },
+
+  markAsRead: async (id) => {
+    const response = await api.put(`/notifications/${id}/read`);
+    return response.data;
+  },
+
+  markAllAsRead: async () => {
+    const response = await api.put('/notifications/mark-all-read');
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/notifications/${id}`);
+    return response.data;
+  },
+
+  getCount: async () => {
+    const response = await api.get('/notifications/count');
+    return response.data;
+  },
+};
