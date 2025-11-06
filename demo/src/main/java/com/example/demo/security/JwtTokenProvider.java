@@ -71,7 +71,17 @@ public class JwtTokenProvider {
     }
 
     private Key getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            // Try decoding as Base64 (existing behavior)
+            byte[] keyBytes = Decoders.BASE64.decode(secret);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (IllegalArgumentException ex) {
+            // If the secret isn't valid Base64 (e.g., contains '-' or other chars),
+            // fall back to using the raw UTF-8 bytes of the configured secret.
+            // This allows configuring a plain-text secret in application.properties
+            // or environment variables without requiring Base64 encoding.
+            byte[] keyBytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            return Keys.hmacShaKeyFor(keyBytes);
+        }
     }
 }

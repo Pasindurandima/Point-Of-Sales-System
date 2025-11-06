@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Monitor, Bell, Download, User, Settings, LogOut, ChevronDown, FileText, ShoppingCart, Package, DollarSign, TrendingUp, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { notificationService } from '../../services/apiService';
+import { notificationService, authService } from '../../services/apiService';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -136,7 +136,10 @@ export default function Navbar() {
     } else if (action === 'settings') {
       navigate('/settings');
     } else if (action === 'logout') {
-      navigate('/sign-out');
+      // Clear authentication data
+      authService.logout();
+      // Redirect to sign-in page
+      navigate('/sign-in');
     }
     setShowProfileMenu(false);
   };

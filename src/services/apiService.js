@@ -4,9 +4,16 @@ import api from '../config/api';
 export const authService = {
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
-    if (response.data.token) {
-      localStorage.setItem('authToken', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    // Backend returns data nested in response.data.data
+    const { data } = response.data;
+    if (data && data.token) {
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify({
+        userId: data.userId,
+        username: data.username,
+        email: data.email,
+        role: data.role
+      }));
     }
     return response.data;
   },

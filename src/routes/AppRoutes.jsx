@@ -1,7 +1,10 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
+import PrivateRoute from '../components/PrivateRoute';
 import Dashboard from '../pages/Dashboard';
+import SignIn from '../pages/SignIn';
+import SignUp from '../pages/SignUp';
 import UserManagement from '../pages/UserManagement';
 import Contacts from '../pages/Contacts';
 import Products from '../pages/Products';
@@ -113,9 +116,17 @@ import PackageSubscription from '../pages/Settings/PackageSubscription';
 
 export default function AppRoutes() {
   return (
-    <MainLayout>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
+    <Routes>
+      {/* Public Routes - No Authentication Required */}
+      <Route path="/sign-in" element={<SignIn />} />
+      <Route path="/sign-up" element={<SignUp />} />
+      
+      {/* Protected Routes - Authentication Required */}
+      <Route path="/*" element={
+        <PrivateRoute>
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
         
         {/* User Management Routes */}
         <Route path="/user-management" element={<UserManagement />} />
@@ -226,7 +237,10 @@ export default function AppRoutes() {
         <Route path="/essentials" element={<Essentials />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/signout" element={<SignOut />} />
-      </Routes>
-    </MainLayout>
+            </Routes>
+          </MainLayout>
+        </PrivateRoute>
+      } />
+    </Routes>
   );
 }
