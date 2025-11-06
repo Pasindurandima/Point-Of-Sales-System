@@ -10,10 +10,17 @@ export default function Navbar() {
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
   const downloadRef = useRef(null);
+
+  // Get current user from localStorage
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    setCurrentUser(user);
+  }, []);
 
   // Fetch notifications from backend
   const fetchNotifications = async () => {
@@ -148,7 +155,9 @@ export default function Navbar() {
     <header className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-700 to-teal-500 text-white shadow-lg">
       <div className="flex items-center gap-3">
         <div>
-          <div className="text-lg font-semibold">Welcome Nadeesha,</div>
+          <div className="text-lg font-semibold">
+            Welcome {currentUser?.firstName || currentUser?.username || 'User'},
+          </div>
           <div className="text-xs text-teal-100">Point of Sale System</div>
         </div>
       </div>
@@ -362,7 +371,7 @@ export default function Navbar() {
             className="flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-lg px-3 py-2 transition-colors"
           >
             <div className="w-8 h-8 bg-white/30 rounded-full flex items-center justify-center font-semibold">
-              N
+              {currentUser?.firstName?.charAt(0)?.toUpperCase() || currentUser?.username?.charAt(0)?.toUpperCase() || 'U'}
             </div>
             <ChevronDown className="w-4 h-4" />
           </button>
@@ -370,8 +379,15 @@ export default function Navbar() {
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl z-50 overflow-hidden">
               <div className="bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-3">
-                <div className="font-semibold">Nadeesha</div>
-                <div className="text-xs text-teal-100">admin@pos.com</div>
+                <div className="font-semibold">
+                  {currentUser?.firstName && currentUser?.lastName 
+                    ? `${currentUser.firstName} ${currentUser.lastName}` 
+                    : currentUser?.username || 'User'}
+                </div>
+                <div className="text-xs text-teal-100">{currentUser?.email || 'user@pos.com'}</div>
+                <div className="text-xs text-teal-200 mt-1 capitalize">
+                  {currentUser?.role?.toLowerCase() || 'user'}
+                </div>
               </div>
               <div className="py-2">
                 <button

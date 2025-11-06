@@ -14,7 +14,7 @@ const SignUp = () => {
     password: '',
     confirmPassword: '',
     address: '',
-    role: 'CASHIER'
+    role: 'USER'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -278,7 +278,7 @@ const SignUp = () => {
               >
                 <option value="ADMIN">Admin</option>
                 <option value="MANAGER">Manager</option>
-                <option value="CASHIER">Cashier</option>
+                <option value="USER">User</option>
               </select>
             </div>
 

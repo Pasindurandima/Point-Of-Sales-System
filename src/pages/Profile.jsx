@@ -1,8 +1,156 @@
-import React, { useState } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaLock, FaBell } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaLock, FaBell, FaSave, FaEdit } from 'react-icons/fa';
+import { authService } from '../services/apiService';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('personal');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  // Form states
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    username: ''
+  });
+
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  // Load current user data
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+      setFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        username: user.username || ''
+      });
+    } else {
+      navigate('/sign-in');
+    }
+  }, [navigate]);
+
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle password input changes
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle profile update
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      // Update localStorage
+      const updatedUser = {
+        ...currentUser,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        username: formData.username
+      };
+      
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+      setIsEditing(false);
+      
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      
+      // Reload page to update navbar
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to update profile' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle password change
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    // Validation
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage({ type: 'error', text: 'New passwords do not match!' });
+      setLoading(false);
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Password must be at least 6 characters long!' });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setMessage({ type: 'success', text: 'Password changed successfully!' });
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to change password' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!currentUser) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin w-16 h-16 border-4 border-teal-600 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  const getInitials = () => {
+    if (currentUser.firstName && currentUser.lastName) {
+      return `${currentUser.firstName.charAt(0)}${currentUser.lastName.charAt(0)}`.toUpperCase();
+    }
+    return currentUser.username?.charAt(0)?.toUpperCase() || 'U';
+  };
+
+  const getJoinDate = () => {
+    const date = new Date(currentUser.createdAt || Date.now());
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
 
   return (
     <div className="p-6">
@@ -11,6 +159,15 @@ const Profile = () => {
         <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
       </div>
 
+      {/* Success/Error Messages */}
+      {message.text && (
+        <div className={`mb-6 p-4 rounded-lg ${
+          message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          {message.text}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Profile Sidebar */}
         <div className="lg:col-span-1">
@@ -18,14 +175,18 @@ const Profile = () => {
             <div className="text-center mb-6">
               <div className="relative inline-block">
                 <div className="w-32 h-32 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-4xl font-bold">
-                  JD
+                  {getInitials()}
                 </div>
                 <button className="absolute bottom-0 right-0 bg-teal-600 hover:bg-teal-700 text-white p-2 rounded-full shadow-lg transition-colors">
                   <FaCamera />
                 </button>
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mt-4">John Doe</h2>
-              <p className="text-sm text-gray-600">Administrator</p>
+              <h2 className="text-xl font-bold text-gray-900 mt-4">
+                {currentUser.firstName && currentUser.lastName 
+                  ? `${currentUser.firstName} ${currentUser.lastName}` 
+                  : currentUser.username}
+              </h2>
+              <p className="text-sm text-gray-600 capitalize">{currentUser.role?.toLowerCase() || 'User'}</p>
               <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
                 Active
               </span>
@@ -54,34 +215,23 @@ const Profile = () => {
                 <FaLock />
                 Security
               </button>
-              <button
-                onClick={() => setActiveTab('notifications')}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                  activeTab === 'notifications'
-                    ? 'bg-teal-50 text-teal-700 font-medium border-l-4 border-teal-600'
-                    : 'hover:bg-gray-50 text-gray-700'
-                }`}
-              >
-                <FaBell />
-                Notifications
-              </button>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Account Stats</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">Account Info</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Member Since</span>
-                <span className="text-sm font-semibold">Jan 2024</span>
+                <span className="text-sm font-semibold">{getJoinDate()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Last Login</span>
-                <span className="text-sm font-semibold">Today</span>
+                <span className="text-sm text-gray-600">Username</span>
+                <span className="text-sm font-semibold">{currentUser.username}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Sales</span>
-                <span className="text-sm font-semibold">1,234</span>
+                <span className="text-sm text-gray-600">User ID</span>
+                <span className="text-sm font-semibold">#{currentUser.userId}</span>
               </div>
             </div>
           </div>

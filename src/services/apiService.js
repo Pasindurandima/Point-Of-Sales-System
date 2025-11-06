@@ -12,6 +12,8 @@ export const authService = {
         userId: data.userId,
         username: data.username,
         email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
         role: data.role
       }));
     }
