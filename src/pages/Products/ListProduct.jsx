@@ -18,11 +18,13 @@ const ListProduct = () => {
     try {
       setLoading(true);
       console.log('Fetching products...');
-      const data = await productService.getAll();
-      console.log('Products fetched:', data);
-      setProducts(data);
+      const productsArray = await productService.getAll();
+      console.log('Products fetched:', productsArray);
+      // Service now returns the array directly
+      setProducts(productsArray || []);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -41,7 +43,7 @@ const ListProduct = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = (products || []).filter(product => {
     const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.categoryId?.toString() === selectedCategory;
