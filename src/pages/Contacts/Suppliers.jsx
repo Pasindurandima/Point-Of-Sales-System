@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Truck, User, Mail, Phone, MapPin, Building2, CreditCard, FileText, Globe } from 'lucide-react';
+import { supplierService } from '../../services/apiService';
 
 const Suppliers = () => {
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     supplierName: '',
     contactPerson: '',
@@ -24,6 +28,30 @@ const Suppliers = () => {
     notes: ''
   });
 
+  // Fetch suppliers on component mount
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
+  // Fetch suppliers on component mount
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
+  const fetchSuppliers = async () => {
+    try {
+      setLoading(true);
+      const data = await supplierService.getAll();
+      setSuppliers(data || []);
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      alert('Failed to load suppliers. Please try again.');
+      setSuppliers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -32,33 +60,90 @@ const Suppliers = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Add API call to create supplier
-    console.log('Supplier data:', formData);
-    // Reset form and close modal
-    setFormData({
-      supplierName: '',
-      contactPerson: '',
-      email: '',
-      phone: '',
-      alternatePhone: '',
-      address: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: '',
-      taxNumber: '',
-      bankName: '',
-      accountNumber: '',
-      accountHolderName: '',
-      paymentTerms: '30',
-      creditLimit: '',
-      website: '',
-      notes: ''
-    });
-    setShowAddSupplierModal(false);
+    
+    try {
+      setLoading(true);
+      
+      // Map form data to backend DTO format
+      const supplierData = {
+        name: formData.supplierName,
+        email: formData.email || null,
+        phone: formData.phone,
+        address: formData.address || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        zipCode: formData.zipCode || null,
+        contactPerson: formData.contactPerson || null
+      };
+
+      const response = await supplierService.create(supplierData);
+      
+      // Show success message
+      if (response.success) {
+        alert(response.message || 'Supplier created successfully!');
+      }
+      
+      // Reset form
+      setFormData({
+        supplierName: '',
+        contactPerson: '',
+        email: '',
+        phone: '',
+        alternatePhone: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: '',
+        taxNumber: '',
+        bankName: '',
+        accountNumber: '',
+        accountHolderName: '',
+        paymentTerms: '30',
+        creditLimit: '',
+        website: '',
+        notes: ''
+      });
+      
+      // Close modal
+      setShowAddSupplierModal(false);
+      
+      // Refresh suppliers list
+      fetchSuppliers();
+      
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create supplier. Please check your input and try again.';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleDeleteSupplier = async (id) => {
+    if (window.confirm('Are you sure you want to delete this supplier?')) {
+      try {
+        setLoading(true);
+        await supplierService.delete(id);
+        alert('Supplier deleted successfully!');
+        fetchSuppliers();
+      } catch (error) {
+        console.error('Error deleting supplier:', error);
+        alert('Failed to delete supplier. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Filter suppliers based on search term
+  const filteredSuppliers = (suppliers || []).filter(supplier =>
+    supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    supplier.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="p-6">
@@ -83,37 +168,63 @@ const Suppliers = () => {
           <input
             type="text"
             placeholder="Search suppliers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
         
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Person</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Due</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Sample Supplier</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">John Doe</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">supplier@example.com</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">+94 77 987 6543</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Rs 0.00</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-teal-600 hover:text-teal-900 mr-3">View</button>
-                  <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading suppliers...</p>
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Person</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredSuppliers.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      <Truck className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                      <p>No suppliers found</p>
+                      <p className="text-sm mt-1">Click "Add New Supplier" to create your first supplier</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredSuppliers.map((supplier) => (
+                    <tr key={supplier.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{supplier.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{supplier.contactPerson || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{supplier.email || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{supplier.phone}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{supplier.city || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button className="text-teal-600 hover:text-teal-900 mr-3">View</button>
+                        <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                        <button 
+                          onClick={() => handleDeleteSupplier(supplier.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -491,10 +602,24 @@ const Suppliers = () => {
                 <button
                   type="submit"
                   onClick={handleSubmit}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors font-semibold flex items-center space-x-2"
+                  disabled={loading}
+                  className={`px-4 py-2 rounded-lg transition-colors font-semibold flex items-center space-x-2 ${
+                    loading 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-teal-600 hover:bg-teal-700'
+                  } text-white`}
                 >
-                  <Truck className="w-4 h-4" />
-                  <span>Create Supplier</span>
+                  {loading ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Truck className="w-4 h-4" />
+                      <span>Create Supplier</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
