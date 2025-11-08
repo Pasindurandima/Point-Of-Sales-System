@@ -31,11 +31,24 @@ public class ExpenseRequest {
     @NotNull(message = "Expense date is required")
     private LocalDateTime expenseDate;
 
+    @NotBlank(message = "Business location is required")
+    private String businessLocation;
+
     @NotNull(message = "Category is required")
-    private String category; // OFFICE_SUPPLIES, UTILITIES, SALARIES, RENT, MAINTENANCE, MARKETING, OTHER
+    private String category; // OFFICE_SUPPLIES, UTILITIES, SALARIES, RENT, MAINTENANCE, MARKETING, TRANSPORTATION, INSURANCE, OTHER
 
     @NotNull(message = "Payment method is required")
-    private String paymentMethod; // CASH, CARD, BANK_TRANSFER
+    private String paymentMethod; // CASH, BANK_TRANSFER, CREDIT_CARD, DEBIT_CARD, CHECK, ONLINE_PAYMENT
+
+    private String paymentAccount;
+
+    private BigDecimal taxPercent;
+
+    private BigDecimal taxAmount;
+
+    private String expenseContact;
+
+    private String additionalNotes;
 
     private String documentUrl;
 }

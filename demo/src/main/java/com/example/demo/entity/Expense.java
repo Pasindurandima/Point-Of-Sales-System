@@ -1,21 +1,32 @@
 package com.example.demo.entity;
 
-import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "expenses")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Expense extends BaseEntity {
+
+    @Column(unique = true, nullable = false)
+    private String referenceNo;
 
     @Column(nullable = false)
     private String title;
@@ -29,6 +40,9 @@ public class Expense extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime expenseDate;
 
+    @Column(nullable = false)
+    private String businessLocation;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ExpenseCategory category;
@@ -37,17 +51,34 @@ public class Expense extends BaseEntity {
     @Column(nullable = false)
     private PaymentMethod paymentMethod;
 
+    private String paymentAccount;
+
+    @Column(precision = 5, scale = 2)
+    private BigDecimal taxPercent;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal taxAmount;
+
+    private String expenseContact;
+
+    @Column(length = 2000)
+    private String additionalNotes;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
     private String documentUrl;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean isActive = true;
+
     public enum ExpenseCategory {
-        OFFICE_SUPPLIES, UTILITIES, SALARIES, RENT, MAINTENANCE, MARKETING, OTHER
+        OFFICE_SUPPLIES, UTILITIES, SALARIES, RENT, MAINTENANCE, MARKETING, TRANSPORTATION, INSURANCE, OTHER
     }
 
     public enum PaymentMethod {
-        CASH, CARD, BANK_TRANSFER
+        CASH, BANK_TRANSFER, CREDIT_CARD, DEBIT_CARD, CHECK, ONLINE_PAYMENT
     }
 }
