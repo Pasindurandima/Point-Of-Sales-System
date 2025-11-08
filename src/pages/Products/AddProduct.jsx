@@ -93,11 +93,16 @@ const AddProduct = () => {
       alert('Product name is required');
       return;
     }
-    if (!formData.sellingPrice || formData.sellingPrice <= 0) {
+    // purchasePrice on the form maps to costPrice in backend DTO
+    if (!formData.purchasePrice || parseFloat(formData.purchasePrice) <= 0) {
+      alert('Valid purchase (cost) price is required');
+      return;
+    }
+    if (!formData.sellingPrice || parseFloat(formData.sellingPrice) <= 0) {
       alert('Valid selling price is required');
       return;
     }
-    if (!formData.totalQuantity || formData.totalQuantity < 0) {
+    if (formData.totalQuantity === '' || formData.totalQuantity == null || parseInt(formData.totalQuantity) < 0) {
       alert('Valid total quantity is required');
       return;
     }
@@ -105,27 +110,31 @@ const AddProduct = () => {
     try {
       setLoading(true);
       console.log('Submitting product:', formData);
-      
-      // Prepare data for API
+
+      // Prepare data for API (match backend ProductRequest DTO)
       const productData = {
         name: formData.name,
         sku: formData.sku,
+        description: formData.description,
         barcode: formData.barcode || formData.sku,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
         brandId: formData.brandId ? parseInt(formData.brandId) : null,
         unit: formData.unit,
-        purchasePrice: parseFloat(formData.purchasePrice) || 0,
+        costPrice: parseFloat(formData.purchasePrice) || 0,
         sellingPrice: parseFloat(formData.sellingPrice),
-        taxRate: parseFloat(formData.taxRate) || 0,
-        totalQuantity: parseInt(formData.totalQuantity) || 0,
+        taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
+        quantity: parseInt(formData.totalQuantity) || 0,
         alertQuantity: parseInt(formData.alertQuantity) || 0,
-        description: formData.description,
-        productType: formData.productType,
-        manageStock: formData.manageStock
+        imageUrl: null // image upload not implemented yet; backend expects imageUrl
       };
 
-      await productService.create(productData);
-      alert('Product added successfully!');
+      const resp = await productService.create(productData);
+      if (resp && resp.success) {
+        alert(resp.message || 'Product added successfully!');
+      } else {
+        // If backend returns success=false but 200, show message
+        alert((resp && resp.message) || 'Failed to add product.');
+      }
       
       // Reset form
       setFormData({

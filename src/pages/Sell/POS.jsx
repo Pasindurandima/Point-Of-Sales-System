@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, Smartphone, Building2, Check, X, User, Calendar } from 'lucide-react';
+import { productService } from '../../services/apiService';
 
 const POS = () => {
   const [cart, setCart] = useState([]);
@@ -14,7 +15,7 @@ const POS = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastInvoice, setLastInvoice] = useState(null);
 
-  // Dummy products data
+  // Dummy products data (used as a temporary fallback)
   const dummyProducts = [
     { id: 1, name: 'Dell Laptop', sku: 'LAP-001', price: 1200.00, stock: 50, image: '💻', taxRate: 18 },
     { id: 2, name: 'HP Printer', sku: 'PRT-001', price: 350.00, stock: 30, image: '🖨️', taxRate: 18 },
@@ -23,6 +24,37 @@ const POS = () => {
     { id: 5, name: 'Wireless Keyboard', sku: 'KEY-001', price: 75.00, stock: 60, image: '⌨️', taxRate: 18 },
     { id: 6, name: 'USB Cable', sku: 'CAB-001', price: 10.00, stock: 200, image: '🔌', taxRate: 18 },
   ];
+
+  // Products fetched from backend
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setProductsLoading(true);
+        const result = await productService.getAll();
+        // Normalize shape for POS UI
+        const normalized = (result || []).map(p => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          price: (p.sellingPrice !== undefined && p.sellingPrice !== null) ? p.sellingPrice : (p.price || 0),
+          stock: p.quantity !== undefined && p.quantity !== null ? p.quantity : (p.stock || 0),
+          image: p.imageUrl || p.image || '📦',
+          taxRate: p.taxRate || 0,
+        }));
+        setProducts(normalized || []);
+      } catch (error) {
+        console.error('Error fetching products for POS:', error);
+        setProducts([]);
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   // Dummy customers data
   const dummyCustomers = [
@@ -160,7 +192,10 @@ const POS = () => {
     setShowCustomerModal(false);
   };
 
-  const filteredProducts = dummyProducts.filter(product =>
+  // Use fetched products if available, otherwise fall back to dummy products
+  const productList = (products && products.length > 0) ? products : dummyProducts;
+
+  const filteredProducts = productList.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchQuery.toLowerCase())
   );
