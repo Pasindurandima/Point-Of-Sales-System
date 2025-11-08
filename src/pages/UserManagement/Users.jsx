@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Mail, Phone, MapPin, Lock, UserCircle } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, Lock, UserCircle, Eye, Edit, Trash2 } from 'lucide-react';
 
 const Users = () => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -83,8 +83,29 @@ const Users = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-teal-600 hover:text-teal-900 mr-3">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      className="text-teal-600 hover:text-teal-900 px-2 py-1 hover:bg-teal-50 rounded transition-colors flex items-center space-x-1"
+                      title="View"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>View</span>
+                    </button>
+                    <button 
+                      className="text-blue-600 hover:text-blue-900 px-2 py-1 hover:bg-blue-50 rounded transition-colors flex items-center space-x-1"
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
+                      <span>Edit</span>
+                    </button>
+                    <button 
+                      className="text-red-600 hover:text-red-900 px-2 py-1 hover:bg-red-50 rounded transition-colors flex items-center space-x-1"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
