@@ -1,6 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 
 const ListExpenses = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -35,8 +39,12 @@ const ListExpenses = () => {
               placeholder="To Date"
             />
           </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
-            Add Expense
+          <button 
+            onClick={() => navigate('/expenses/add')}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Expense</span>
           </button>
         </div>
         
