@@ -1,22 +1,33 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.*;
-import com.example.demo.entity.*;
-import com.example.demo.exception.BadRequestException;
-import com.example.demo.exception.ResourceNotFoundException;
-import com.example.demo.repository.*;
-import com.example.demo.util.DtoMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.demo.dto.PurchaseItemRequest;
+import com.example.demo.dto.PurchaseRequest;
+import com.example.demo.dto.PurchaseResponse;
+import com.example.demo.entity.Product;
+import com.example.demo.entity.Purchase;
+import com.example.demo.entity.PurchaseItem;
+import com.example.demo.entity.Supplier;
+import com.example.demo.entity.User;
+import com.example.demo.exception.BadRequestException;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.PurchaseRepository;
+import com.example.demo.repository.SupplierRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.util.DtoMapper;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -39,63 +50,78 @@ public class PurchaseService {
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + request.getSupplierId()));
 
+        // Parse enums
+        Purchase.PurchaseStatus status = Purchase.PurchaseStatus.valueOf(request.getPurchaseStatus().toUpperCase());
+        Purchase.DiscountType discountType = request.getDiscountType() != null 
+            ? Purchase.DiscountType.valueOf(request.getDiscountType().toUpperCase()) 
+            : null;
+        Purchase.PaymentMethod paymentMethod = request.getPaymentMethod() != null 
+            ? Purchase.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase()) 
+            : null;
+
         // Create purchase
         Purchase purchase = Purchase.builder()
                 .purchaseNumber(generatePurchaseNumber())
                 .supplier(supplier)
+                .supplierAddress(request.getSupplierAddress())
+                .referenceNo(request.getReferenceNo())
                 .purchaseDate(request.getPurchaseDate())
+                .status(status)
+                .businessLocation(request.getBusinessLocation())
+                .payTerm(request.getPayTerm())
+                .attachedDocumentPath(request.getAttachedDocumentPath())
                 .items(new ArrayList<>())
-                .subtotal(BigDecimal.ZERO)
-                .tax(BigDecimal.ZERO)
-                .total(BigDecimal.ZERO)
-                .status(Purchase.PurchaseStatus.RECEIVED)
+                .subtotal(request.getSubtotal())
+                .discountAmount(request.getDiscountAmount())
+                .discountType(discountType)
+                .tax(request.getTax())
+                .taxPercent(request.getTaxPercent())
+                .shippingCharges(request.getShippingCharges())
+                .total(request.getTotal())
+                .additionalNotes(request.getAdditionalNotes())
+                .paidAmount(request.getPaidAmount())
+                .paidOn(request.getPaidOn())
+                .paymentMethod(paymentMethod)
+                .paymentAccount(request.getPaymentAccount())
+                .paymentNote(request.getPaymentNote())
+                .paymentDue(request.getPaymentDue())
                 .user(user)
-                .notes(request.getNotes())
                 .build();
 
         // Process purchase items
-        BigDecimal subtotal = BigDecimal.ZERO;
-        BigDecimal totalTax = BigDecimal.ZERO;
-
         for (PurchaseItemRequest itemRequest : request.getItems()) {
             Product product = productRepository.findById(itemRequest.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + itemRequest.getProductId()));
-
-            // Calculate amounts
-            BigDecimal itemSubtotal = itemRequest.getUnitCost().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
-            BigDecimal taxRate = product.getTaxRate() != null ? product.getTaxRate() : BigDecimal.ZERO;
-            BigDecimal taxAmount = itemSubtotal.multiply(taxRate).divide(BigDecimal.valueOf(100));
-            BigDecimal itemTotal = itemSubtotal.add(taxAmount);
 
             // Create purchase item
             PurchaseItem purchaseItem = PurchaseItem.builder()
                     .purchase(purchase)
                     .product(product)
                     .quantity(itemRequest.getQuantity())
+                    .unitCostBeforeDiscount(itemRequest.getUnitCostBeforeDiscount())
+                    .discountPercent(itemRequest.getDiscountPercent())
+                    .unitCostBeforeTax(itemRequest.getUnitCostBeforeTax())
+                    .lineTotal(itemRequest.getLineTotal())
+                    .profitMarginPercent(itemRequest.getProfitMarginPercent())
+                    .unitSellingPrice(itemRequest.getUnitSellingPrice())
                     .unitCost(itemRequest.getUnitCost())
-                    .subtotal(itemSubtotal)
-                    .taxRate(taxRate)
-                    .taxAmount(taxAmount)
-                    .total(itemTotal)
+                    .subtotal(itemRequest.getLineTotal())
+                    .taxRate(BigDecimal.ZERO)
+                    .taxAmount(BigDecimal.ZERO)
+                    .total(itemRequest.getLineTotal())
                     .build();
 
             purchase.getItems().add(purchaseItem);
 
-            subtotal = subtotal.add(itemSubtotal);
-            totalTax = totalTax.add(taxAmount);
-
             // Update product quantity and cost price
             product.setQuantity(product.getQuantity() + itemRequest.getQuantity());
-            product.setCostPrice(itemRequest.getUnitCost());
+            product.setCostPrice(itemRequest.getUnitCostBeforeTax());
+            // Update selling price if provided
+            if (itemRequest.getUnitSellingPrice() != null && itemRequest.getUnitSellingPrice().compareTo(BigDecimal.ZERO) > 0) {
+                product.setSellingPrice(itemRequest.getUnitSellingPrice());
+            }
             productRepository.save(product);
         }
-
-        // Calculate purchase totals
-        BigDecimal total = subtotal.add(totalTax);
-
-        purchase.setSubtotal(subtotal);
-        purchase.setTax(totalTax);
-        purchase.setTotal(total);
 
         Purchase savedPurchase = purchaseRepository.save(purchase);
         return dtoMapper.toPurchaseResponse(savedPurchase);

@@ -16,6 +16,12 @@ public class PurchaseItemResponse {
     private Long id;
     private ProductResponse product;
     private Integer quantity;
+    private BigDecimal unitCostBeforeDiscount;
+    private BigDecimal discountPercent;
+    private BigDecimal unitCostBeforeTax;
+    private BigDecimal lineTotal;
+    private BigDecimal profitMarginPercent;
+    private BigDecimal unitSellingPrice;
     private BigDecimal unitCost;
     private BigDecimal subtotal;
     private BigDecimal taxRate;

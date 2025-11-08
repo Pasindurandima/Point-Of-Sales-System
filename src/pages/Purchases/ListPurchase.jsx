@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, ShoppingCart, Truck, FileText, Calendar, DollarSign, Plus, Trash2, Package, Search } from 'lucide-react';
 
 const ListPurchase = () => {
+  const navigate = useNavigate();
   const [showAddPurchaseModal, setShowAddPurchaseModal] = useState(false);
   const [formData, setFormData] = useState({
     supplier: '',
@@ -88,7 +90,7 @@ const ListPurchase = () => {
             />
           </div>
           <button 
-            onClick={() => setShowAddPurchaseModal(true)}
+            onClick={() => navigate('/purchases/add')}
             className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
           >
             <ShoppingCart className="w-4 h-4" />
