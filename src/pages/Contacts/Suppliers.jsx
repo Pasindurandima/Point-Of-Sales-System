@@ -4,6 +4,8 @@ import { supplierService } from '../../services/apiService';
 
 const Suppliers = () => {
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
+  const [showViewSupplierModal, setShowViewSupplierModal] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,6 +145,16 @@ const Suppliers = () => {
     }
   };
 
+  const handleViewSupplier = (supplier) => {
+    setSelectedSupplier(supplier);
+    setShowViewSupplierModal(true);
+  };
+
+  const closeViewModal = () => {
+    setShowViewSupplierModal(false);
+    setSelectedSupplier(null);
+  };
+
   // Filter suppliers based on search term
   const filteredSuppliers = (suppliers || []).filter(supplier =>
     supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -215,7 +227,12 @@ const Suppliers = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{supplier.phone}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{supplier.city || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-teal-600 hover:text-teal-900 mr-3">View</button>
+                        <button 
+                          onClick={() => handleViewSupplier(supplier)}
+                          className="text-teal-600 hover:text-teal-900 mr-3"
+                        >
+                          View
+                        </button>
                         <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
                         <button 
                           onClick={() => handleDeleteSupplier(supplier.id)}
@@ -625,6 +642,203 @@ const Suppliers = () => {
                       <span>Create Supplier</span>
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Supplier Modal */}
+      {showViewSupplierModal && selectedSupplier && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-teal-600 to-teal-700">
+              <div className="flex items-center space-x-2">
+                <Truck className="w-5 h-5 text-white" />
+                <h3 className="text-xl font-semibold text-white">Supplier Details</h3>
+              </div>
+              <button
+                onClick={closeViewModal}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Basic Information */}
+              <div className="mb-6">
+                <h4 className="text-sm font-bold text-gray-700 mb-4 uppercase flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  Basic Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Supplier Name</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Contact Person</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.contactPerson || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Phone</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Alternate Phone</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.alternatePhone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Website</label>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedSupplier.website ? (
+                        <a href={selectedSupplier.website} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">
+                          {selectedSupplier.website}
+                        </a>
+                      ) : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Address Information */}
+              <div className="mb-6">
+                <h4 className="text-sm font-bold text-gray-700 mb-4 uppercase flex items-center">
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Address Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Street Address</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.address || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">City</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.city || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">State/Province</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.state || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Zip/Postal Code</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.zipCode || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Country</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.country || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Information */}
+              <div className="mb-6">
+                <h4 className="text-sm font-bold text-gray-700 mb-4 uppercase flex items-center">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Financial Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Tax Number / VAT ID</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.taxNumber || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Payment Terms</label>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedSupplier.paymentTerms 
+                        ? selectedSupplier.paymentTerms === 0 
+                          ? 'Due on Receipt' 
+                          : `Net ${selectedSupplier.paymentTerms} Days`
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Credit Limit</label>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedSupplier.creditLimit ? `Rs ${selectedSupplier.creditLimit.toFixed(2)}` : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bank Details */}
+              <div className="mb-6">
+                <h4 className="text-sm font-bold text-gray-700 mb-4 uppercase flex items-center">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Bank Details
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Bank Name</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.bankName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Account Number</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.accountNumber || 'N/A'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Account Holder Name</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.accountHolderName || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedSupplier.notes && (
+                <div className="mb-6">
+                  <h4 className="text-sm font-bold text-gray-700 mb-4 uppercase flex items-center">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Additional Notes
+                  </h4>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedSupplier.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* System Information */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-700 mb-4 uppercase">System Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Supplier ID</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedSupplier.id}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Status</label>
+                    <p className="text-sm font-medium">
+                      <span className={`px-2 py-1 rounded-full text-xs ${selectedSupplier.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {selectedSupplier.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Created At</label>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedSupplier.createdAt ? new Date(selectedSupplier.createdAt).toLocaleString() : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex-shrink-0 border-t bg-gray-50 px-6 py-4">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={closeViewModal}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors font-semibold"
+                >
+                  Close
                 </button>
               </div>
             </div>
