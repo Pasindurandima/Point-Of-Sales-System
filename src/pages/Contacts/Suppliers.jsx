@@ -4,6 +4,7 @@ import { supplierService } from '../../services/apiService';
 
 const Suppliers = () => {
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
+  const [showEditSupplierModal, setShowEditSupplierModal] = useState(false);
   const [showViewSupplierModal, setShowViewSupplierModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
@@ -155,6 +156,105 @@ const Suppliers = () => {
     setSelectedSupplier(null);
   };
 
+  const handleEditSupplier = (supplier) => {
+    // Populate form with supplier data
+    setFormData({
+      supplierName: supplier.name || '',
+      contactPerson: supplier.contactPerson || '',
+      email: supplier.email || '',
+      phone: supplier.phone || '',
+      alternatePhone: supplier.alternatePhone || '',
+      address: supplier.address || '',
+      city: supplier.city || '',
+      state: supplier.state || '',
+      zipCode: supplier.zipCode || '',
+      country: supplier.country || '',
+      taxNumber: supplier.taxNumber || '',
+      bankName: supplier.bankName || '',
+      accountNumber: supplier.accountNumber || '',
+      accountHolderName: supplier.accountHolderName || '',
+      paymentTerms: supplier.paymentTerms?.toString() || '30',
+      creditLimit: supplier.creditLimit?.toString() || '',
+      website: supplier.website || '',
+      notes: supplier.notes || ''
+    });
+    setSelectedSupplier(supplier);
+    setShowEditSupplierModal(true);
+  };
+
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      
+      // Map form data to backend DTO format - send ALL fields
+      const supplierData = {
+        name: formData.supplierName,
+        email: formData.email || null,
+        phone: formData.phone,
+        address: formData.address || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        zipCode: formData.zipCode || null,
+        contactPerson: formData.contactPerson || null,
+        alternatePhone: formData.alternatePhone || null,
+        country: formData.country || null,
+        taxNumber: formData.taxNumber || null,
+        bankName: formData.bankName || null,
+        accountNumber: formData.accountNumber || null,
+        accountHolderName: formData.accountHolderName || null,
+        paymentTerms: formData.paymentTerms ? parseInt(formData.paymentTerms) : null,
+        creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null,
+        website: formData.website || null,
+        notes: formData.notes || null
+      };
+
+      const response = await supplierService.update(selectedSupplier.id, supplierData);
+      
+      // Show success message
+      if (response.success) {
+        alert(response.message || 'Supplier updated successfully!');
+      }
+      
+      // Reset form
+      setFormData({
+        supplierName: '',
+        contactPerson: '',
+        email: '',
+        phone: '',
+        alternatePhone: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: '',
+        taxNumber: '',
+        bankName: '',
+        accountNumber: '',
+        accountHolderName: '',
+        paymentTerms: '30',
+        creditLimit: '',
+        website: '',
+        notes: ''
+      });
+      
+      // Close modal
+      setShowEditSupplierModal(false);
+      setSelectedSupplier(null);
+      
+      // Refresh suppliers list
+      fetchSuppliers();
+      
+    } catch (error) {
+      console.error('Error updating supplier:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update supplier. Please check your input and try again.';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter suppliers based on search term
   const filteredSuppliers = (suppliers || []).filter(supplier =>
     supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -233,7 +333,12 @@ const Suppliers = () => {
                         >
                           View
                         </button>
-                        <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                        <button 
+                          onClick={() => handleEditSupplier(supplier)}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                        >
+                          Edit
+                        </button>
                         <button 
                           onClick={() => handleDeleteSupplier(supplier.id)}
                           className="text-red-600 hover:text-red-900"
@@ -640,6 +745,411 @@ const Suppliers = () => {
                     <>
                       <Truck className="w-4 h-4" />
                       <span>Create Supplier</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Supplier Modal */}
+      {showEditSupplierModal && selectedSupplier && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-blue-700">
+              <div className="flex items-center space-x-2">
+                <Truck className="w-5 h-5 text-white" />
+                <h3 className="text-xl font-semibold text-white">Edit Supplier</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditSupplierModal(false);
+                  setSelectedSupplier(null);
+                }}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body - Same form as Add but for editing */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <form onSubmit={handleUpdateSubmit}>
+                {/* Basic Information */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase">Basic Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Supplier Name */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Supplier Name <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="text"
+                          name="supplierName"
+                          value={formData.supplierName}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter supplier/company name"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Contact Person */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Contact Person <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="text"
+                          name="contactPerson"
+                          value={formData.contactPerson}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter contact person name"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Email <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter email address"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Phone <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter phone number"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Alternate Phone */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Alternate Phone
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="tel"
+                          name="alternatePhone"
+                          value={formData.alternatePhone}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter alternate phone"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Website */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Website
+                      </label>
+                      <div className="relative">
+                        <Globe className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="url"
+                          name="website"
+                          value={formData.website}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://example.com"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Address Information */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase">Address Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Address */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Street Address
+                      </label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <textarea
+                          name="address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter street address"
+                          rows="2"
+                        />
+                      </div>
+                    </div>
+
+                    {/* City */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        City
+                      </label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter city"
+                      />
+                    </div>
+
+                    {/* State */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        State/Province
+                      </label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter state"
+                      />
+                    </div>
+
+                    {/* Zip Code */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Zip/Postal Code
+                      </label>
+                      <input
+                        type="text"
+                        name="zipCode"
+                        value={formData.zipCode}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter zip code"
+                      />
+                    </div>
+
+                    {/* Country */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter country"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Information */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase">Financial Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Tax Number */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Tax Number / VAT ID
+                      </label>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="text"
+                          name="taxNumber"
+                          value={formData.taxNumber}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter tax number"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Payment Terms */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Payment Terms (Days)
+                      </label>
+                      <select
+                        name="paymentTerms"
+                        value={formData.paymentTerms}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="0">Due on Receipt</option>
+                        <option value="7">Net 7 Days</option>
+                        <option value="15">Net 15 Days</option>
+                        <option value="30">Net 30 Days</option>
+                        <option value="45">Net 45 Days</option>
+                        <option value="60">Net 60 Days</option>
+                        <option value="90">Net 90 Days</option>
+                      </select>
+                    </div>
+
+                    {/* Credit Limit */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Credit Limit
+                      </label>
+                      <input
+                        type="number"
+                        name="creditLimit"
+                        value={formData.creditLimit}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="0.00"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bank Details */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase">Bank Details (Optional)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Bank Name */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Bank Name
+                      </label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="text"
+                          name="bankName"
+                          value={formData.bankName}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter bank name"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Account Number */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Account Number
+                      </label>
+                      <div className="relative">
+                        <CreditCard className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="text"
+                          name="accountNumber"
+                          value={formData.accountNumber}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter account number"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Account Holder Name */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Account Holder Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                        <input
+                          type="text"
+                          name="accountHolderName"
+                          value={formData.accountHolderName}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter account holder name"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Add any additional notes about this supplier"
+                    rows="3"
+                  />
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex-shrink-0 border-t bg-gray-50 px-6 py-4">
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditSupplierModal(false);
+                    setSelectedSupplier(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleUpdateSubmit}
+                  disabled={loading}
+                  className={`px-4 py-2 rounded-lg transition-colors font-semibold flex items-center space-x-2 ${
+                    loading 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  } text-white`}
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <span>Updating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Truck className="w-4 h-4" />
+                      <span>Update Supplier</span>
                     </>
                   )}
                 </button>
