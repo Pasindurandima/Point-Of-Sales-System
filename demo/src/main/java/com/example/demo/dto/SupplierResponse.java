@@ -22,6 +22,16 @@ public class SupplierResponse {
     private String state;
     private String zipCode;
     private String contactPerson;
+    private String alternatePhone;
+    private String country;
+    private String taxNumber;
+    private String bankName;
+    private String accountNumber;
+    private String accountHolderName;
+    private Integer paymentTerms;
+    private Double creditLimit;
+    private String website;
+    private String notes;
     private Boolean isActive;
     private LocalDateTime createdAt;
 }

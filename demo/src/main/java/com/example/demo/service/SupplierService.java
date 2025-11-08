@@ -1,5 +1,11 @@
 package com.example.demo.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.demo.dto.SupplierRequest;
 import com.example.demo.dto.SupplierResponse;
 import com.example.demo.entity.Supplier;
@@ -7,12 +13,8 @@ import com.example.demo.exception.BadRequestException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.SupplierRepository;
 import com.example.demo.util.DtoMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,16 @@ public class SupplierService {
                 .state(request.getState())
                 .zipCode(request.getZipCode())
                 .contactPerson(request.getContactPerson())
+                .alternatePhone(request.getAlternatePhone())
+                .country(request.getCountry())
+                .taxNumber(request.getTaxNumber())
+                .bankName(request.getBankName())
+                .accountNumber(request.getAccountNumber())
+                .accountHolderName(request.getAccountHolderName())
+                .paymentTerms(request.getPaymentTerms())
+                .creditLimit(request.getCreditLimit())
+                .website(request.getWebsite())
+                .notes(request.getNotes())
                 .build();
 
         Supplier savedSupplier = supplierRepository.save(supplier);
@@ -74,6 +86,16 @@ public class SupplierService {
         supplier.setState(request.getState());
         supplier.setZipCode(request.getZipCode());
         supplier.setContactPerson(request.getContactPerson());
+        supplier.setAlternatePhone(request.getAlternatePhone());
+        supplier.setCountry(request.getCountry());
+        supplier.setTaxNumber(request.getTaxNumber());
+        supplier.setBankName(request.getBankName());
+        supplier.setAccountNumber(request.getAccountNumber());
+        supplier.setAccountHolderName(request.getAccountHolderName());
+        supplier.setPaymentTerms(request.getPaymentTerms());
+        supplier.setCreditLimit(request.getCreditLimit());
+        supplier.setWebsite(request.getWebsite());
+        supplier.setNotes(request.getNotes());
 
         Supplier updatedSupplier = supplierRepository.save(supplier);
         return dtoMapper.toSupplierResponse(updatedSupplier);

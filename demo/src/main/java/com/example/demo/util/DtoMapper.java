@@ -1,10 +1,29 @@
 package com.example.demo.util;
 
-import com.example.demo.dto.*;
-import com.example.demo.entity.*;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Component;
 
-import java.util.stream.Collectors;
+import com.example.demo.dto.BrandResponse;
+import com.example.demo.dto.CategoryResponse;
+import com.example.demo.dto.CustomerResponse;
+import com.example.demo.dto.ExpenseResponse;
+import com.example.demo.dto.ProductResponse;
+import com.example.demo.dto.PurchaseItemResponse;
+import com.example.demo.dto.PurchaseResponse;
+import com.example.demo.dto.SaleItemResponse;
+import com.example.demo.dto.SaleResponse;
+import com.example.demo.dto.SupplierResponse;
+import com.example.demo.entity.Brand;
+import com.example.demo.entity.Category;
+import com.example.demo.entity.Customer;
+import com.example.demo.entity.Expense;
+import com.example.demo.entity.Product;
+import com.example.demo.entity.Purchase;
+import com.example.demo.entity.PurchaseItem;
+import com.example.demo.entity.Sale;
+import com.example.demo.entity.SaleItem;
+import com.example.demo.entity.Supplier;
 
 @Component
 public class DtoMapper {
@@ -83,6 +102,16 @@ public class DtoMapper {
                 .state(supplier.getState())
                 .zipCode(supplier.getZipCode())
                 .contactPerson(supplier.getContactPerson())
+                .alternatePhone(supplier.getAlternatePhone())
+                .country(supplier.getCountry())
+                .taxNumber(supplier.getTaxNumber())
+                .bankName(supplier.getBankName())
+                .accountNumber(supplier.getAccountNumber())
+                .accountHolderName(supplier.getAccountHolderName())
+                .paymentTerms(supplier.getPaymentTerms())
+                .creditLimit(supplier.getCreditLimit())
+                .website(supplier.getWebsite())
+                .notes(supplier.getNotes())
                 .isActive(supplier.getIsActive())
                 .createdAt(supplier.getCreatedAt())
                 .build();

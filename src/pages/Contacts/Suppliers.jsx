@@ -33,11 +33,6 @@ const Suppliers = () => {
     fetchSuppliers();
   }, []);
 
-  // Fetch suppliers on component mount
-  useEffect(() => {
-    fetchSuppliers();
-  }, []);
-
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
@@ -66,7 +61,7 @@ const Suppliers = () => {
     try {
       setLoading(true);
       
-      // Map form data to backend DTO format
+      // Map form data to backend DTO format - send ALL fields
       const supplierData = {
         name: formData.supplierName,
         email: formData.email || null,
@@ -75,7 +70,17 @@ const Suppliers = () => {
         city: formData.city || null,
         state: formData.state || null,
         zipCode: formData.zipCode || null,
-        contactPerson: formData.contactPerson || null
+        contactPerson: formData.contactPerson || null,
+        alternatePhone: formData.alternatePhone || null,
+        country: formData.country || null,
+        taxNumber: formData.taxNumber || null,
+        bankName: formData.bankName || null,
+        accountNumber: formData.accountNumber || null,
+        accountHolderName: formData.accountHolderName || null,
+        paymentTerms: formData.paymentTerms ? parseInt(formData.paymentTerms) : null,
+        creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null,
+        website: formData.website || null,
+        notes: formData.notes || null
       };
 
       const response = await supplierService.create(supplierData);

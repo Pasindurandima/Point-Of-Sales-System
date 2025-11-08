@@ -36,6 +36,27 @@ public class Supplier extends BaseEntity {
 
     private String contactPerson;
 
+    private String alternatePhone;
+
+    private String country;
+
+    private String taxNumber;
+
+    private String bankName;
+
+    private String accountNumber;
+
+    private String accountHolderName;
+
+    private Integer paymentTerms; // Payment terms in days
+
+    private Double creditLimit;
+
+    private String website;
+
+    @Column(length = 1000)
+    private String notes;
+
     @OneToMany(mappedBy = "supplier")
     private List<Purchase> purchases = new ArrayList<>();
 }

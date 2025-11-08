@@ -31,4 +31,14 @@ public class SupplierRequest {
     private String state;
     private String zipCode;
     private String contactPerson;
+    private String alternatePhone;
+    private String country;
+    private String taxNumber;
+    private String bankName;
+    private String accountNumber;
+    private String accountHolderName;
+    private Integer paymentTerms; // Payment terms in days
+    private Double creditLimit;
+    private String website;
+    private String notes;
 }
