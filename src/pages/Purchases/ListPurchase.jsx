@@ -1,72 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, ShoppingCart, Truck, FileText, Calendar, DollarSign, Plus, Trash2, Package, Search } from 'lucide-react';
+import { ShoppingCart, Eye, Trash2, AlertCircle } from 'lucide-react';
+import { purchaseService } from '../../services/apiService';
 
 const ListPurchase = () => {
   const navigate = useNavigate();
-  const [showAddPurchaseModal, setShowAddPurchaseModal] = useState(false);
-  const [formData, setFormData] = useState({
-    supplier: '',
-    invoiceNo: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
-    referenceNo: '',
-    purchaseStatus: 'RECEIVED',
-    paymentStatus: 'PENDING',
-    paymentMethod: '',
-    notes: ''
+  const [purchases, setPurchases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+
+  // Fetch purchases on component mount
+  useEffect(() => {
+    fetchPurchases();
+  }, []);
+
+  const fetchPurchases = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await purchaseService.getAll();
+      setPurchases(data);
+    } catch (err) {
+      console.error('Error fetching purchases:', err);
+      setError('Failed to load purchases. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this purchase?')) {
+      try {
+        await purchaseService.delete(id);
+        alert('Purchase deleted successfully');
+        fetchPurchases(); // Refresh list
+      } catch (err) {
+        console.error('Error deleting purchase:', err);
+        alert('Failed to delete purchase: ' + (err.response?.data?.message || err.message));
+      }
+    }
+  };
+
+  const handleView = (purchase) => {
+    // TODO: Implement view modal or navigate to detail page
+    console.log('View purchase:', purchase);
+    alert('View functionality coming soon!');
+  };
+
+  // Filter purchases based on search and date
+  const filteredPurchases = purchases.filter(purchase => {
+    const matchesSearch = 
+      purchase.purchaseNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.referenceNo?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDate = !dateFilter || 
+      new Date(purchase.purchaseDate).toISOString().split('T')[0] === dateFilter;
+    
+    return matchesSearch && matchesDate;
   });
 
-  const [purchaseItems, setPurchaseItems] = useState([]);
-  const [searchProduct, setSearchProduct] = useState('');
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  const addProduct = () => {
-    const newItem = {
-      id: Date.now(),
-      product: '',
-      quantity: 1,
-      unitCost: 0,
-      tax: 0,
-      subtotal: 0
+  const formatCurrency = (amount) => {
+    if (!amount) return '₨ 0.00';
+    return `₨ ${parseFloat(amount).toFixed(2)}`;
+  };
+
+  const getStatusBadge = (status) => {
+    const statusColors = {
+      RECEIVED: 'bg-green-100 text-green-800',
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      ORDERED: 'bg-blue-100 text-blue-800',
+      CANCELLED: 'bg-red-100 text-red-800'
     };
-    setPurchaseItems([...purchaseItems, newItem]);
+    
+    return (
+      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status}
+      </span>
+    );
   };
 
-  const removeProduct = (id) => {
-    setPurchaseItems(purchaseItems.filter(item => item.id !== id));
-  };
-
-  const updateProduct = (id, field, value) => {
-    setPurchaseItems(purchaseItems.map(item => {
-      if (item.id === id) {
-        const updated = { ...item, [field]: parseFloat(value) || 0 };
-        updated.subtotal = updated.quantity * updated.unitCost + (updated.quantity * updated.unitCost * updated.tax / 100);
-        return updated;
-      }
-      return item;
-    }));
-  };
-
-  const calculateTotals = () => {
-    const subtotal = purchaseItems.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
-    const tax = purchaseItems.reduce((sum, item) => sum + (item.quantity * item.unitCost * item.tax / 100), 0);
-    const total = subtotal + tax;
-    return { subtotal, tax, total };
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const totals = calculateTotals();
-    console.log('Purchase Data:', { ...formData, items: purchaseItems, totals });
-    setShowAddPurchaseModal(false);
-    // API integration here
+  const getPaymentStatus = (total, paid) => {
+    const totalAmount = parseFloat(total) || 0;
+    const paidAmount = parseFloat(paid) || 0;
+    
+    if (paidAmount === 0) return { label: 'Unpaid', color: 'bg-red-100 text-red-800' };
+    if (paidAmount >= totalAmount) return { label: 'Paid', color: 'bg-green-100 text-green-800' };
+    return { label: 'Partial', color: 'bg-yellow-100 text-yellow-800' };
   };
 
   return (
@@ -82,10 +110,14 @@ const ListPurchase = () => {
             <input
               type="text"
               placeholder="Search purchases..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <input
               type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
@@ -98,354 +130,151 @@ const ListPurchase = () => {
           </button>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice No</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2025-11-04</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PUR-001</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Sample Supplier</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Rs 50,000.00</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Rs 30,000.00</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">Rs 20,000.00</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                    Partial
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-teal-600 hover:text-teal-900 mr-2">View</button>
-                  <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full"></div>
+            <span className="ml-3 text-gray-600">Loading purchases...</span>
+          </div>
+        )}
 
-      {/* Add Purchase Modal */}
-      {showAddPurchaseModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-teal-600 to-teal-700">
-              <div className="flex items-center space-x-2">
-                <ShoppingCart className="w-5 h-5 text-white" />
-                <h3 className="text-xl font-semibold text-white">Add New Purchase</h3>
-              </div>
-              <button
-                onClick={() => setShowAddPurchaseModal(false)}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+            <span className="text-red-700">{error}</span>
+            <button 
+              onClick={fetchPurchases}
+              className="ml-auto text-red-600 hover:text-red-800 font-semibold"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <form onSubmit={handleSubmit}>
-                {/* Purchase Information */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-bold text-gray-700 mb-3 uppercase">Purchase Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Supplier */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Supplier <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Truck className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
-                        <select
-                          name="supplier"
-                          value={formData.supplier}
-                          onChange={handleInputChange}
-                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          required
+        {/* Empty State */}
+        {!loading && !error && filteredPurchases.length === 0 && (
+          <div className="text-center py-12">
+            <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">No purchases found</h3>
+            <p className="text-gray-500 mb-4">
+              {searchTerm || dateFilter ? 'Try adjusting your filters' : 'Get started by adding your first purchase'}
+            </p>
+            <button
+              onClick={() => navigate('/purchases/add')}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Add First Purchase
+            </button>
+          </div>
+        )}
+
+        {/* Purchases Table */}
+        {!loading && !error && filteredPurchases.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase No</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredPurchases.map((purchase) => {
+                  const paymentStatus = getPaymentStatus(purchase.total, purchase.paidAmount);
+                  const dueAmount = parseFloat(purchase.paymentDue || 0);
+                  
+                  return (
+                    <tr key={purchase.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(purchase.purchaseDate)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {purchase.purchaseNumber}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {purchase.supplier?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {purchase.referenceNo || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        {formatCurrency(purchase.total)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                        {formatCurrency(purchase.paidAmount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                        {formatCurrency(dueAmount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(purchase.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${paymentStatus.color}`}>
+                          {paymentStatus.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button 
+                          onClick={() => handleView(purchase)}
+                          className="text-teal-600 hover:text-teal-900 mr-3"
+                          title="View Details"
                         >
-                          <option value="">Select Supplier</option>
-                          <option value="supplier1">Sample Supplier 1</option>
-                          <option value="supplier2">Sample Supplier 2</option>
-                          <option value="supplier3">Sample Supplier 3</option>
-                        </select>
-                      </div>
-                    </div>
+                          <Eye className="w-4 h-4 inline" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(purchase.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4 inline" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-                    {/* Purchase Date */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Purchase Date <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
-                        <input
-                          type="date"
-                          name="purchaseDate"
-                          value={formData.purchaseDate}
-                          onChange={handleInputChange}
-                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Invoice No */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Invoice No
-                      </label>
-                      <div className="relative">
-                        <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
-                        <input
-                          type="text"
-                          name="invoiceNo"
-                          value={formData.invoiceNo}
-                          onChange={handleInputChange}
-                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          placeholder="Auto-generated"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Reference No */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Reference No
-                      </label>
-                      <input
-                        type="text"
-                        name="referenceNo"
-                        value={formData.referenceNo}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        placeholder="Supplier invoice reference"
-                      />
-                    </div>
-
-                    {/* Purchase Status */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Purchase Status
-                      </label>
-                      <select
-                        name="purchaseStatus"
-                        value={formData.purchaseStatus}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      >
-                        <option value="ORDERED">Ordered</option>
-                        <option value="RECEIVED">Received</option>
-                        <option value="PENDING">Pending</option>
-                      </select>
-                    </div>
-
-                    {/* Payment Status */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Payment Status
-                      </label>
-                      <select
-                        name="paymentStatus"
-                        value={formData.paymentStatus}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      >
-                        <option value="PENDING">Pending</option>
-                        <option value="PARTIAL">Partial</option>
-                        <option value="PAID">Paid</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Products Section */}
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-sm font-bold text-gray-700 uppercase">Purchase Items</h4>
-                    <button
-                      type="button"
-                      onClick={addProduct}
-                      className="flex items-center space-x-2 text-sm text-teal-600 hover:text-teal-700 font-semibold"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Product</span>
-                    </button>
-                  </div>
-
-                  {/* Product Search */}
-                  <div className="mb-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={searchProduct}
-                        onChange={(e) => setSearchProduct(e.target.value)}
-                        className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        placeholder="Search products by name or SKU..."
-                      />
-                    </div>
-                  </div>
-
-                  {/* Products Table */}
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost (Rs)</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax (%)</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subtotal (Rs)</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {purchaseItems.length === 0 ? (
-                            <tr>
-                              <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                                <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                                <p>No products added yet. Click "Add Product" to start.</p>
-                              </td>
-                            </tr>
-                          ) : (
-                            purchaseItems.map((item) => (
-                              <tr key={item.id}>
-                                <td className="px-4 py-3">
-                                  <select
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                    onChange={(e) => updateProduct(item.id, 'product', e.target.value)}
-                                  >
-                                    <option value="">Select Product</option>
-                                    <option value="product1">Sample Product 1</option>
-                                    <option value="product2">Sample Product 2</option>
-                                    <option value="product3">Sample Product 3</option>
-                                  </select>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity}
-                                    onChange={(e) => updateProduct(item.id, 'quantity', e.target.value)}
-                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                  />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={item.unitCost}
-                                    onChange={(e) => updateProduct(item.id, 'unitCost', e.target.value)}
-                                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                  />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={item.tax}
-                                    onChange={(e) => updateProduct(item.id, 'tax', e.target.value)}
-                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                  />
-                                </td>
-                                <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                                  {item.subtotal.toFixed(2)}
-                                </td>
-                                <td className="px-4 py-3">
-                                  <button
-                                    type="button"
-                                    onClick={() => removeProduct(item.id)}
-                                    className="text-red-600 hover:text-red-800"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Summary and Notes */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Notes */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Additional Notes
-                    </label>
-                    <textarea
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Add any notes about this purchase..."
-                      rows="4"
-                    />
-                  </div>
-
-                  {/* Total Summary */}
-                  <div>
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                      <h4 className="text-sm font-bold text-gray-700 uppercase mb-3">Purchase Summary</h4>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700">Subtotal:</span>
-                        <span className="font-semibold">Rs {calculateTotals().subtotal.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-700">Tax:</span>
-                        <span className="font-semibold">Rs {calculateTotals().tax.toFixed(2)}</span>
-                      </div>
-                      <div className="border-t pt-3 flex justify-between text-lg">
-                        <span className="text-gray-900 font-bold">Total:</span>
-                        <span className="font-bold text-teal-600">Rs {calculateTotals().total.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex-shrink-0 border-t bg-gray-50 px-6 py-4">
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddPurchaseModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  onClick={handleSubmit}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors font-semibold flex items-center space-x-2"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>Save Purchase</span>
-                </button>
+        {/* Summary Footer */}
+        {!loading && !error && filteredPurchases.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">
+                Showing <span className="font-semibold">{filteredPurchases.length}</span> of <span className="font-semibold">{purchases.length}</span> purchases
+              </span>
+              <div className="flex gap-4">
+                <span className="text-gray-600">
+                  Total Amount: <span className="font-semibold text-gray-900">
+                    {formatCurrency(filteredPurchases.reduce((sum, p) => sum + parseFloat(p.total || 0), 0))}
+                  </span>
+                </span>
+                <span className="text-gray-600">
+                  Total Paid: <span className="font-semibold text-green-600">
+                    {formatCurrency(filteredPurchases.reduce((sum, p) => sum + parseFloat(p.paidAmount || 0), 0))}
+                  </span>
+                </span>
+                <span className="text-gray-600">
+                  Total Due: <span className="font-semibold text-red-600">
+                    {formatCurrency(filteredPurchases.reduce((sum, p) => sum + parseFloat(p.paymentDue || 0), 0))}
+                  </span>
+                </span>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
