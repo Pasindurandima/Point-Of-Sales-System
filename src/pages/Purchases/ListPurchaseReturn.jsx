@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
-import { X, RotateCcw, Truck, FileText, Calendar, AlertCircle, Plus, Trash2, Package, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, RotateCcw, Truck, FileText, Calendar, AlertCircle, Plus, Trash2, Package, Search, Edit } from 'lucide-react';
+import { productService } from '../../services/apiService';
 
 const ListPurchaseReturn = () => {
+  console.log('ListPurchaseReturn component loaded');
+  
   const [showAddReturnModal, setShowAddReturnModal] = useState(false);
+  const [showEditReturnModal, setShowEditReturnModal] = useState(false);
+  const [purchaseReturns, setPurchaseReturns] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [editingReturn, setEditingReturn] = useState(null);
+  
   const [formData, setFormData] = useState({
     purchaseInvoice: '',
     supplier: '',
@@ -15,6 +25,48 @@ const ListPurchaseReturn = () => {
 
   const [returnItems, setReturnItems] = useState([]);
   const [searchProduct, setSearchProduct] = useState('');
+
+  // Fetch purchase returns on component mount
+  useEffect(() => {
+    console.log('useEffect running - fetching purchase returns');
+    fetchPurchaseReturns();
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      console.log('Fetching products...');
+      const response = await productService.getAll();
+      console.log('Products response:', response);
+      setProducts(response || []);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      // Don't show error to user, just log it
+    }
+  };
+
+  const fetchPurchaseReturns = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching purchase returns...');
+      
+      // TODO: Replace with actual API call when backend is ready
+      // const response = await purchaseReturnService.getAll();
+      // setPurchaseReturns(response.data || []);
+      
+      // For now, load from localStorage as mock data
+      const storedReturns = localStorage.getItem('purchaseReturns');
+      const returns = storedReturns ? JSON.parse(storedReturns) : [];
+      console.log('Purchase returns loaded:', returns);
+      setPurchaseReturns(returns);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching purchase returns:', err);
+      setError(`Failed to load purchase returns: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,7 +95,17 @@ const ListPurchaseReturn = () => {
   const updateProduct = (id, field, value) => {
     setReturnItems(returnItems.map(item => {
       if (item.id === id) {
-        const updated = { ...item, [field]: parseFloat(value) || 0 };
+        const updated = { ...item, [field]: field === 'product' ? value : (parseFloat(value) || 0) };
+        
+        // If product is selected, auto-fill unit cost from product data
+        if (field === 'product' && value) {
+          const selectedProduct = products.find(p => p.id === parseInt(value));
+          if (selectedProduct) {
+            updated.unitCost = selectedProduct.purchasePrice || selectedProduct.sellingPrice || 0;
+            updated.purchasedQty = selectedProduct.quantity || 0;
+          }
+        }
+        
         updated.subtotal = updated.returnQty * updated.unitCost;
         return updated;
       }
@@ -55,12 +117,111 @@ const ListPurchaseReturn = () => {
     return returnItems.reduce((sum, item) => sum + item.subtotal, 0);
   };
 
-  const handleSubmit = (e) => {
+  // Filter products based on search
+  const filteredProducts = searchProduct.trim() === '' 
+    ? products 
+    : products.filter(product => 
+        product.name?.toLowerCase().includes(searchProduct.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchProduct.toLowerCase())
+      );
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const total = calculateTotal();
-    console.log('Purchase Return Data:', { ...formData, items: returnItems, total });
-    setShowAddReturnModal(false);
-    // API integration here
+    try {
+      const total = calculateTotal();
+      const returnData = {
+        ...formData,
+        items: returnItems,
+        total,
+        id: editingReturn ? editingReturn.id : Date.now(),
+        createdAt: editingReturn ? editingReturn.createdAt : new Date().toISOString()
+      };
+
+      console.log('Saving purchase return:', returnData);
+
+      // TODO: Replace with actual API call when backend is ready
+      // if (editingReturn) {
+      //   await purchaseReturnService.update(editingReturn.id, returnData);
+      // } else {
+      //   await purchaseReturnService.create(returnData);
+      // }
+
+      // For now, save to localStorage
+      const storedReturns = localStorage.getItem('purchaseReturns');
+      let returns = storedReturns ? JSON.parse(storedReturns) : [];
+      
+      if (editingReturn) {
+        returns = returns.map(r => r.id === editingReturn.id ? returnData : r);
+        console.log('Purchase return updated');
+      } else {
+        returns.push(returnData);
+        console.log('Purchase return created');
+      }
+      
+      localStorage.setItem('purchaseReturns', JSON.stringify(returns));
+
+      // Reset form and close modal
+      if (editingReturn) {
+        setShowEditReturnModal(false);
+        setEditingReturn(null);
+      } else {
+        setShowAddReturnModal(false);
+      }
+      
+      setFormData({
+        purchaseInvoice: '',
+        supplier: '',
+        returnDate: new Date().toISOString().split('T')[0],
+        returnNo: '',
+        returnReason: '',
+        refundType: 'CASH',
+        notes: ''
+      });
+      setReturnItems([]);
+      fetchPurchaseReturns();
+    } catch (err) {
+      console.error('Error saving purchase return:', err);
+      alert(`Failed to save purchase return: ${err.message}`);
+    }
+  };
+
+  const handleEdit = (purchaseReturn) => {
+    console.log('Editing purchase return:', purchaseReturn);
+    setEditingReturn(purchaseReturn);
+    setFormData({
+      purchaseInvoice: purchaseReturn.purchaseInvoice || '',
+      supplier: purchaseReturn.supplier || '',
+      returnDate: purchaseReturn.returnDate || new Date().toISOString().split('T')[0],
+      returnNo: purchaseReturn.returnNo || '',
+      returnReason: purchaseReturn.returnReason || '',
+      refundType: purchaseReturn.refundType || 'CASH',
+      notes: purchaseReturn.notes || ''
+    });
+    setReturnItems(purchaseReturn.items || []);
+    setShowEditReturnModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this purchase return?')) {
+      try {
+        console.log('Deleting purchase return:', id);
+        
+        // TODO: Replace with actual API call when backend is ready
+        // await purchaseReturnService.delete(id);
+
+        // For now, delete from localStorage
+        const storedReturns = localStorage.getItem('purchaseReturns');
+        let returns = storedReturns ? JSON.parse(storedReturns) : [];
+        returns = returns.filter(r => r.id !== id);
+        localStorage.setItem('purchaseReturns', JSON.stringify(returns));
+        
+        console.log('Purchase return deleted successfully');
+        fetchPurchaseReturns();
+      } catch (err) {
+        console.error('Error deleting purchase return:', err);
+        alert('Failed to delete purchase return. Please try again.');
+      }
+    }
   };
 
   return (
@@ -93,53 +254,113 @@ const ListPurchaseReturn = () => {
         </div>
         
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return No</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Invoice</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2025-11-04</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PR-001</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">PUR-001</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Sample Supplier</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">Rs 5,000.00</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    Completed
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-teal-600 hover:text-teal-900 mr-2">View</button>
-                  <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {loading && (
+            <div className="text-center py-8 text-gray-600">Loading purchase returns...</div>
+          )}
+          
+          {error && (
+            <div className="text-center py-8 text-red-600">{error}</div>
+          )}
+
+          {!loading && !error && purchaseReturns.length === 0 && (
+            <div className="text-center py-8 text-gray-600">
+              No purchase returns found. Click "Add Purchase Return" to create one.
+            </div>
+          )}
+
+          {!loading && !error && purchaseReturns.length > 0 && (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return No</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Invoice</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refund Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {purchaseReturns.map((purchaseReturn) => (
+                  <tr key={purchaseReturn.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(purchaseReturn.returnDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {purchaseReturn.returnNo}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {purchaseReturn.purchaseInvoice}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {purchaseReturn.supplier}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-semibold">
+                      Rs {purchaseReturn.total?.toFixed(2) || '0.00'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        purchaseReturn.refundType === 'CASH' ? 'bg-green-100 text-green-800' :
+                        purchaseReturn.refundType === 'BANK_TRANSFER' ? 'bg-blue-100 text-blue-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {purchaseReturn.refundType?.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button 
+                        onClick={() => handleEdit(purchaseReturn)}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
+                        <Edit className="w-4 h-4 inline" /> Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(purchaseReturn.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <Trash2 className="w-4 h-4 inline" /> Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
-      {/* Add Purchase Return Modal */}
-      {showAddReturnModal && (
+      {/* Add/Edit Purchase Return Modal */}
+      {(showAddReturnModal || showEditReturnModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-red-600 to-red-700">
               <div className="flex items-center space-x-2">
                 <RotateCcw className="w-5 h-5 text-white" />
-                <h3 className="text-xl font-semibold text-white">Add Purchase Return</h3>
+                <h3 className="text-xl font-semibold text-white">
+                  {editingReturn ? 'Edit Purchase Return' : 'Add Purchase Return'}
+                </h3>
               </div>
               <button
-                onClick={() => setShowAddReturnModal(false)}
+                onClick={() => {
+                  if (editingReturn) {
+                    setShowEditReturnModal(false);
+                    setEditingReturn(null);
+                  } else {
+                    setShowAddReturnModal(false);
+                  }
+                  setFormData({
+                    purchaseInvoice: '',
+                    supplier: '',
+                    returnDate: new Date().toISOString().split('T')[0],
+                    returnNo: '',
+                    returnReason: '',
+                    refundType: 'CASH',
+                    notes: ''
+                  });
+                  setReturnItems([]);
+                }}
                 className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -295,6 +516,9 @@ const ListPurchaseReturn = () => {
                         placeholder="Search purchased products..."
                       />
                     </div>
+                    {products.length === 0 && (
+                      <p className="text-xs text-gray-500 mt-1">Loading products...</p>
+                    )}
                   </div>
 
                   {/* Return Items Table */}
@@ -325,12 +549,19 @@ const ListPurchaseReturn = () => {
                                 <td className="px-4 py-3">
                                   <select
                                     className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    value={item.product}
                                     onChange={(e) => updateProduct(item.id, 'product', e.target.value)}
                                   >
                                     <option value="">Select Product</option>
-                                    <option value="product1">Sample Product 1</option>
-                                    <option value="product2">Sample Product 2</option>
-                                    <option value="product3">Sample Product 3</option>
+                                    {filteredProducts.length === 0 ? (
+                                      <option disabled>No products found</option>
+                                    ) : (
+                                      filteredProducts.map((product) => (
+                                        <option key={product.id} value={product.id}>
+                                          {product.name} - {product.sku} (Stock: {product.quantity || 0})
+                                        </option>
+                                      ))
+                                    )}
                                   </select>
                                 </td>
                                 <td className="px-4 py-3">
