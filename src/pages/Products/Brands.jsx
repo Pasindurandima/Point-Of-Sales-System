@@ -6,9 +6,11 @@ const Brands = () => {
   console.log('Brands component loaded');
   
   const [showAddBrandModal, setShowAddBrandModal] = useState(false);
+  const [showEditBrandModal, setShowEditBrandModal] = useState(false);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingBrand, setEditingBrand] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: ''
@@ -57,29 +59,48 @@ const Brands = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log('Creating brand with data:', formData);
-      console.log('FormData JSON:', JSON.stringify(formData));
-      const response = await brandService.create(formData);
-      console.log('Brand created successfully:', response);
-      setShowAddBrandModal(false);
+      if (editingBrand) {
+        // Update existing brand
+        console.log('Updating brand:', editingBrand.id, formData);
+        const response = await brandService.update(editingBrand.id, formData);
+        console.log('Brand updated successfully:', response);
+        setShowEditBrandModal(false);
+      } else {
+        // Create new brand
+        console.log('Creating brand with data:', formData);
+        const response = await brandService.create(formData);
+        console.log('Brand created successfully:', response);
+        setShowAddBrandModal(false);
+      }
       setFormData({ name: '', description: '' });
+      setEditingBrand(null);
       fetchBrands(); // Refresh the brand list
     } catch (err) {
-      console.error('Error creating brand:', err);
+      console.error('Error saving brand:', err);
       console.error('Error response:', err.response);
       console.error('Error response data:', err.response?.data);
-      console.error('Error response status:', err.response?.status);
       
       const errorMessage = err.response?.data?.message || err.response?.data?.errors || err.message;
-      alert(`Failed to create brand: ${errorMessage}`);
+      alert(`Failed to save brand: ${errorMessage}`);
     }
+  };
+
+  const handleEdit = (brand) => {
+    setEditingBrand(brand);
+    setFormData({
+      name: brand.name,
+      description: brand.description || ''
+    });
+    setShowEditBrandModal(true);
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this brand?')) {
       try {
+        console.log('Deleting brand:', id);
         await brandService.delete(id);
-        fetchBrands(); // Refresh the brand list
+        console.log('Brand deleted successfully');
+        fetchBrands(); // Refresh the list
       } catch (err) {
         console.error('Error deleting brand:', err);
         alert('Failed to delete brand. Please try again.');
@@ -140,7 +161,12 @@ const Brands = () => {
                       {brand.createdAt ? new Date(brand.createdAt).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                      <button 
+                        onClick={() => handleEdit(brand)}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
+                        Edit
+                      </button>
                       <button 
                         onClick={() => handleDelete(brand.id)}
                         className="text-red-600 hover:text-red-900"
@@ -241,8 +267,103 @@ const Brands = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Brand Modal */}
+      {showEditBrandModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-blue-700">
+              <div className="flex items-center space-x-2">
+                <Tag className="w-5 h-5 text-white" />
+                <h3 className="text-xl font-semibold text-white">Edit Brand</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditBrandModal(false);
+                  setEditingBrand(null);
+                  setFormData({ name: '', description: '' });
+                }}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  {/* Brand Name */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Brand Name <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Tag className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., Samsung, Sony, Bosch"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <div className="relative">
+                      <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Describe the brand"
+                        rows="3"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex-shrink-0 border-t bg-gray-50 px-6 py-4">
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditBrandModal(false);
+                    setEditingBrand(null);
+                    setFormData({ name: '', description: '' });
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleSubmit}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-semibold flex items-center space-x-2"
+                >
+                  <Tag className="w-4 h-4" />
+                  <span>Update Brand</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default Brands;
+

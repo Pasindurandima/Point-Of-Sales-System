@@ -205,7 +205,9 @@ export const purchaseService = {
 export const categoryService = {
   getAll: async () => {
     const response = await api.get('/categories');
-    return response?.data?.data || [];
+    console.log('categoryService.getAll - Raw response:', response);
+    console.log('categoryService.getAll - response.data:', response.data);
+    return response.data; // Return response.data (ApiResponse object)
   },
 
   getById: async (id) => {
@@ -214,7 +216,9 @@ export const categoryService = {
   },
 
   create: async (categoryData) => {
+    console.log('categoryService.create - Sending data:', categoryData);
     const response = await api.post('/categories', categoryData);
+    console.log('categoryService.create - Response:', response);
     return response?.data;
   },
 
