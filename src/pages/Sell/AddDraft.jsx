@@ -1,7 +1,27 @@
-import React, { useState } from 'react';
-import { Save, Plus, Trash2, Package, Search, User, Calendar, FileText, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Save, Plus, Trash2, Package, Search, User, Calendar, FileText, DollarSign, X, UserPlus } from 'lucide-react';
+import { draftService, productService, customerService } from '../../services/apiService';
 
 const AddDraft = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [searchProduct, setSearchProduct] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    customerGroup: 'REGULAR'
+  });
+  
   const [draftData, setDraftData] = useState({
     customer: '',
     draftDate: new Date().toISOString().split('T')[0],
@@ -13,6 +33,89 @@ const AddDraft = () => {
   });
 
   const [draftItems, setDraftItems] = useState([]);
+
+  // Fetch products and customers on mount
+  useEffect(() => {
+    fetchProducts();
+    fetchCustomers();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await productService.getAll();
+      console.log('Products loaded:', response);
+      setProducts(response || []);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await customerService.getAll();
+      console.log('Customers loaded:', response);
+      setCustomers(response || []);
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+    }
+  };
+
+  const handleCustomerChange = (customerId) => {
+    setDraftData({...draftData, customer: customerId});
+    
+    // Find and set selected customer details
+    if (customerId) {
+      const customer = customers.find(c => c.id === parseInt(customerId));
+      setSelectedCustomer(customer || null);
+      console.log('Selected customer:', customer);
+    } else {
+      setSelectedCustomer(null);
+    }
+  };
+
+  const handleAddCustomer = async () => {
+    try {
+      // Validate required fields
+      if (!newCustomer.name || !newCustomer.phone) {
+        alert('Please fill in customer name and phone number');
+        return;
+      }
+
+      setLoading(true);
+      console.log('Creating new customer:', newCustomer);
+      
+      const response = await customerService.create(newCustomer);
+      console.log('Customer created:', response);
+      
+      alert('Customer added successfully!');
+      
+      // Refresh customers list
+      await fetchCustomers();
+      
+      // Select the newly created customer
+      if (response.data && response.data.id) {
+        handleCustomerChange(response.data.id.toString());
+      }
+      
+      // Close modal and reset form
+      setShowAddCustomerModal(false);
+      setNewCustomer({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        customerGroup: 'REGULAR'
+      });
+    } catch (err) {
+      console.error('Error creating customer:', err);
+      alert(`Failed to add customer: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addProduct = () => {
     setDraftItems([...draftItems, {
@@ -30,10 +133,32 @@ const AddDraft = () => {
   };
 
   const updateProduct = (id, field, value) => {
-    setDraftItems(draftItems.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setDraftItems(draftItems.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, [field]: field === 'product' ? value : (parseFloat(value) || 0) };
+        
+        // If product is selected, auto-fill unit price
+        if (field === 'product' && value) {
+          const selectedProduct = products.find(p => p.id === parseInt(value));
+          if (selectedProduct) {
+            updated.unitPrice = selectedProduct.sellingPrice || 0;
+            updated.tax = selectedProduct.taxRate || 0;
+          }
+        }
+        
+        return updated;
+      }
+      return item;
+    }));
   };
+
+  // Filter products based on search
+  const filteredProducts = searchProduct.trim() === '' 
+    ? products 
+    : products.filter(product => 
+        product.name?.toLowerCase().includes(searchProduct.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchProduct.toLowerCase())
+      );
 
   const calculateSubtotal = () => {
     return draftItems.reduce((sum, item) => {
@@ -61,16 +186,57 @@ const AddDraft = () => {
     return calculateSubtotal() + calculateTax() - calculateDiscount() + parseFloat(draftData.shippingCharge || 0);
   };
 
-  const handleSaveDraft = () => {
-    const draft = {
-      ...draftData,
-      items: draftItems,
-      subtotal: calculateSubtotal(),
-      tax: calculateTax(),
-      discount: calculateDiscount(),
-      total: calculateTotal()
-    };
-    console.log('Saving draft:', draft);
+  const handleSaveDraft = async () => {
+    try {
+      setLoading(true);
+      
+      // Validate required fields
+      if (!draftData.customer) {
+        alert('Please select a customer');
+        setLoading(false);
+        return;
+      }
+
+      if (draftItems.length === 0) {
+        alert('Please add at least one product');
+        setLoading(false);
+        return;
+      }
+
+      // Validate all items have products selected
+      const invalidItems = draftItems.filter(item => !item.product);
+      if (invalidItems.length > 0) {
+        alert('Please select a product for all items');
+        setLoading(false);
+        return;
+      }
+
+      // Prepare draft data matching backend SaleRequest DTO
+      const draft = {
+        customerId: parseInt(draftData.customer),
+        saleDate: new Date(draftData.draftDate).toISOString(),
+        items: draftItems.map(item => ({
+          productId: parseInt(item.product),
+          quantity: parseInt(item.quantity),
+          unitPrice: parseFloat(item.unitPrice)
+        })),
+        paymentMethod: 'CASH', // Default for drafts
+        paidAmount: 0, // Drafts have no payment yet
+        notes: draftData.notes || null
+      };
+
+      console.log('Saving draft:', draft);
+      const response = await draftService.create(draft);
+      console.log('Draft saved:', response);
+      
+      alert('Draft saved successfully!');
+      navigate('/sell/list-draft');
+    } catch (err) {
+      console.error('Error saving draft:', err);
+      alert(`Failed to save draft: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,17 +254,33 @@ const AddDraft = () => {
               <User className="w-4 h-4 inline mr-1" />
               Customer <span className="text-red-500">*</span>
             </label>
-            <select
-              value={draftData.customer}
-              onChange={(e) => setDraftData({...draftData, customer: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
-            >
-              <option value="">Select Customer</option>
-              <option value="walk-in">Walk-in Customer</option>
-              <option value="john-doe">John Doe</option>
-              <option value="jane-smith">Jane Smith</option>
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={draftData.customer}
+                onChange={(e) => handleCustomerChange(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              >
+                <option value="">Select Customer</option>
+                {customers.length === 0 ? (
+                  <option disabled>Loading customers...</option>
+                ) : (
+                  customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name || `${customer.firstName} ${customer.lastName}`} - {customer.phone}
+                    </option>
+                  ))
+                )}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowAddCustomerModal(true)}
+                className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center"
+                title="Add New Customer"
+              >
+                <UserPlus className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div>
@@ -130,17 +312,94 @@ const AddDraft = () => {
           </div>
         </div>
 
+        {/* Customer Details Display */}
+        {selectedCustomer && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg border border-teal-200">
+            <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase flex items-center">
+              <User className="w-4 h-4 mr-2" />
+              Customer Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Customer Name</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {selectedCustomer.name || `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`.trim() || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Phone Number</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {selectedCustomer.phone || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Email</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {selectedCustomer.email || 'N/A'}
+                </p>
+              </div>
+              {selectedCustomer.customerGroup && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Customer Group</p>
+                  <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
+                    selectedCustomer.customerGroup === 'VIP' ? 'bg-purple-100 text-purple-800' :
+                    selectedCustomer.customerGroup === 'WHOLESALE' ? 'bg-blue-100 text-blue-800' :
+                    selectedCustomer.customerGroup === 'RETAIL' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedCustomer.customerGroup}
+                  </span>
+                </div>
+              )}
+              {selectedCustomer.address && (
+                <div className="md:col-span-2">
+                  <p className="text-xs text-gray-600 mb-1">Address</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {selectedCustomer.address}
+                    {selectedCustomer.city && `, ${selectedCustomer.city}`}
+                    {selectedCustomer.state && `, ${selectedCustomer.state}`}
+                    {selectedCustomer.zipCode && ` - ${selectedCustomer.zipCode}`}
+                  </p>
+                </div>
+              )}
+              {selectedCustomer.creditLimit && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Credit Limit</p>
+                  <p className="text-sm font-semibold text-teal-600">
+                    Rs {parseFloat(selectedCustomer.creditLimit).toFixed(2)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Products Section */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Products</h3>
             <button
               onClick={addProduct}
+              type="button"
               className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
               <span>Add Product</span>
             </button>
+          </div>
+
+          {/* Product Search */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={searchProduct}
+                onChange={(e) => setSearchProduct(e.target.value)}
+                className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                placeholder="Search products by name or SKU..."
+              />
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -175,8 +434,15 @@ const AddDraft = () => {
                           className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500"
                         >
                           <option value="">Select Product</option>
-                          <option value="product1">Product 1</option>
-                          <option value="product2">Product 2</option>
+                          {filteredProducts.length === 0 ? (
+                            <option disabled>No products found</option>
+                          ) : (
+                            filteredProducts.map((product) => (
+                              <option key={product.id} value={product.id}>
+                                {product.name} - {product.sku} (Stock: {product.quantity || 0})
+                              </option>
+                            ))
+                          )}
                         </select>
                       </td>
                       <td className="px-4 py-3">
@@ -319,18 +585,210 @@ const AddDraft = () => {
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4">
-          <button className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors">
+          <button 
+            onClick={() => navigate('/sell/list-draft')}
+            type="button"
+            className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors"
+            disabled={loading}
+          >
             Cancel
           </button>
           <button
             onClick={handleSaveDraft}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2"
+            type="button"
+            disabled={loading}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 disabled:bg-gray-400"
           >
             <Save className="w-4 h-4" />
-            <span>Save Draft</span>
+            <span>{loading ? 'Saving...' : 'Save Draft'}</span>
           </button>
         </div>
       </div>
+
+      {/* Add Customer Modal */}
+      {showAddCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-teal-600 to-teal-700">
+              <div className="flex items-center space-x-2">
+                <UserPlus className="w-5 h-5 text-white" />
+                <h3 className="text-xl font-semibold text-white">Add New Customer</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddCustomerModal(false);
+                  setNewCustomer({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                    customerGroup: 'REGULAR'
+                  });
+                }}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Customer Name */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Customer Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Enter customer name"
+                    required
+                  />
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={newCustomer.phone}
+                    onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="0771234567"
+                    required
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="customer@example.com"
+                  />
+                </div>
+
+                {/* Address */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomer.address}
+                    onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Street address"
+                  />
+                </div>
+
+                {/* City */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomer.city}
+                    onChange={(e) => setNewCustomer({...newCustomer, city: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="City"
+                  />
+                </div>
+
+                {/* State */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    State/Province
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomer.state}
+                    onChange={(e) => setNewCustomer({...newCustomer, state: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="State"
+                  />
+                </div>
+
+                {/* ZIP Code */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ZIP Code
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomer.zipCode}
+                    onChange={(e) => setNewCustomer({...newCustomer, zipCode: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="10001"
+                  />
+                </div>
+
+                {/* Customer Group */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Customer Group
+                  </label>
+                  <select
+                    value={newCustomer.customerGroup}
+                    onChange={(e) => setNewCustomer({...newCustomer, customerGroup: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="REGULAR">Regular</option>
+                    <option value="VIP">VIP</option>
+                    <option value="WHOLESALE">Wholesale</option>
+                    <option value="RETAIL">Retail</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 px-6 py-4 border-t bg-gray-50">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddCustomerModal(false);
+                  setNewCustomer({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                    customerGroup: 'REGULAR'
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCustomer}
+                disabled={loading}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center space-x-2 disabled:bg-gray-400"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>{loading ? 'Adding...' : 'Add Customer'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

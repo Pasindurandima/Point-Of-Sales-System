@@ -112,6 +112,52 @@ export const saleService = {
   },
 };
 
+// Draft Services (Drafts are sales with status = DRAFT)
+export const draftService = {
+  getAll: async () => {
+    const response = await api.get('/sales');
+    // Filter only drafts on frontend
+    const allSales = response?.data?.data || [];
+    return allSales.filter(sale => sale.status === 'DRAFT');
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/sales/${id}`);
+    return response?.data?.data;
+  },
+
+  create: async (draftData) => {
+    // Set status to DRAFT
+    const response = await api.post('/sales', {
+      ...draftData,
+      status: 'DRAFT'
+    });
+    return response?.data;
+  },
+
+  update: async (id, draftData) => {
+    const response = await api.put(`/sales/${id}`, {
+      ...draftData,
+      status: 'DRAFT'
+    });
+    return response?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/sales/${id}`);
+    return response?.data;
+  },
+
+  convertToSale: async (id, saleData) => {
+    // Update draft status to COMPLETED
+    const response = await api.put(`/sales/${id}`, {
+      ...saleData,
+      status: 'COMPLETED'
+    });
+    return response?.data;
+  },
+};
+
 // Customer Services
 export const customerService = {
   getAll: async () => {
