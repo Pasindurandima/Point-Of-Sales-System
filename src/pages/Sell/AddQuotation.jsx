@@ -1,7 +1,29 @@
-import React, { useState } from 'react';
-import { FileText, Plus, Trash2, Package, User, Calendar, Clock, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FileText, Plus, Trash2, Package, User, Calendar, Clock, DollarSign, X, UserPlus, Search } from 'lucide-react';
+import { quotationService, productService, customerService } from '../../services/apiService';
 
 const AddQuotation = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const quotationId = searchParams.get('id');
+  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [searchProduct, setSearchProduct] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    customerGroup: 'REGULAR'
+  });
+
   const [quotationData, setQuotationData] = useState({
     customer: '',
     quotationDate: new Date().toISOString().split('T')[0],
@@ -15,6 +37,165 @@ const AddQuotation = () => {
   });
 
   const [quotationItems, setQuotationItems] = useState([]);
+
+  // Fetch products and customers on mount
+  useEffect(() => {
+    fetchProducts();
+    fetchCustomers();
+  }, []);
+
+  // Load existing quotation if editing
+  useEffect(() => {
+    if (quotationId && customers.length > 0) {
+      loadQuotation(quotationId);
+    }
+  }, [quotationId, customers]);
+
+  const loadQuotation = async (id) => {
+    try {
+      setLoading(true);
+      const response = await quotationService.getById(id);
+      if (response.data && response.data.success) {
+        const quotation = response.data.data;
+        
+        // Parse notes to extract expiry, terms, and actual notes
+        const parseNotes = (notes) => {
+          if (!notes || !notes.includes('[QUOTATION]')) {
+            return { expiryDate: '', terms: '', actualNotes: notes || '' };
+          }
+          
+          const markerIndex = notes.indexOf('[QUOTATION]');
+          const content = notes.substring(markerIndex + 11).trim();
+          
+          const expiryMatch = content.match(/Expiry:\s*([^\|]+)/);
+          const termsMatch = content.match(/Terms:\s*([^\|]+)/);
+          
+          let actualNotes = content;
+          if (expiryMatch || termsMatch) {
+            const lastIndex = Math.max(
+              termsMatch ? content.indexOf(termsMatch[0]) + termsMatch[0].length : 0,
+              expiryMatch ? content.indexOf(expiryMatch[0]) + expiryMatch[0].length : 0
+            );
+            actualNotes = content.substring(lastIndex).replace(/^\s*\|\s*/, '').trim();
+          }
+          
+          return {
+            expiryDate: expiryMatch ? expiryMatch[1].trim() : '',
+            terms: termsMatch ? termsMatch[1].trim() : '',
+            actualNotes
+          };
+        };
+
+        const parsedNotes = parseNotes(quotation.notes);
+
+        // Set quotation data
+        setQuotationData({
+          customer: quotation.customerId.toString(),
+          quotationDate: quotation.saleDate,
+          expiryDate: parsedNotes.expiryDate,
+          referenceNo: '',
+          terms: parsedNotes.terms,
+          notes: parsedNotes.actualNotes,
+          discountType: 'PERCENTAGE',
+          discountValue: 0,
+          shippingCharge: 0
+        });
+
+        // Set quotation items
+        if (quotation.items && quotation.items.length > 0) {
+          setQuotationItems(quotation.items.map(item => ({
+            id: Date.now() + Math.random(),
+            product: item.productId.toString(),
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            tax: item.taxRate || 0,
+            discount: 0
+          })));
+        }
+
+        // Set selected customer
+        const customer = customers.find(c => c.id === quotation.customerId);
+        if (customer) {
+          setSelectedCustomer(customer);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading quotation:', err);
+      alert('Failed to load quotation details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const response = await productService.getAll();
+      console.log('Products loaded:', response);
+      setProducts(response || []);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await customerService.getAll();
+      console.log('Customers loaded:', response);
+      setCustomers(response || []);
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+    }
+  };
+
+  const handleCustomerChange = (customerId) => {
+    setQuotationData({...quotationData, customer: customerId});
+    
+    // Find and set selected customer details
+    if (customerId) {
+      const customer = customers.find(c => c.id === parseInt(customerId));
+      setSelectedCustomer(customer || null);
+      console.log('Selected customer:', customer);
+    } else {
+      setSelectedCustomer(null);
+    }
+  };
+
+  const handleAddCustomer = async () => {
+    try {
+      if (!newCustomer.name || !newCustomer.phone) {
+        alert('Please fill in customer name and phone number');
+        return;
+      }
+
+      setLoading(true);
+      const response = await customerService.create(newCustomer);
+      console.log('Customer created:', response);
+      
+      alert('Customer added successfully!');
+      await fetchCustomers();
+      
+      if (response.data && response.data.id) {
+        handleCustomerChange(response.data.id.toString());
+      }
+      
+      setShowAddCustomerModal(false);
+      setNewCustomer({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        customerGroup: 'REGULAR'
+      });
+    } catch (err) {
+      console.error('Error creating customer:', err);
+      alert(`Failed to add customer: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addProduct = () => {
     setQuotationItems([...quotationItems, {
@@ -33,10 +214,33 @@ const AddQuotation = () => {
   };
 
   const updateProduct = (id, field, value) => {
-    setQuotationItems(quotationItems.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setQuotationItems(quotationItems.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, [field]: field === 'product' ? value : (parseFloat(value) || 0) };
+        
+        // If product is selected, auto-fill unit price
+        if (field === 'product' && value) {
+          const selectedProduct = products.find(p => p.id === parseInt(value));
+          if (selectedProduct) {
+            updated.unitPrice = selectedProduct.sellingPrice || 0;
+            updated.tax = selectedProduct.taxRate || 0;
+            updated.description = selectedProduct.description || '';
+          }
+        }
+        
+        return updated;
+      }
+      return item;
+    }));
   };
+
+  // Filter products based on search
+  const filteredProducts = searchProduct.trim() === '' 
+    ? products 
+    : products.filter(product => 
+        product.name?.toLowerCase().includes(searchProduct.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(searchProduct.toLowerCase())
+      );
 
   const calculateSubtotal = () => {
     return quotationItems.reduce((sum, item) => {
@@ -64,16 +268,79 @@ const AddQuotation = () => {
     return calculateSubtotal() + calculateTax() - calculateDiscount() + parseFloat(quotationData.shippingCharge || 0);
   };
 
-  const handleSaveQuotation = () => {
-    const quotation = {
-      ...quotationData,
-      items: quotationItems,
-      subtotal: calculateSubtotal(),
-      tax: calculateTax(),
-      discount: calculateDiscount(),
-      total: calculateTotal()
-    };
-    console.log('Saving quotation:', quotation);
+  const handleSaveQuotation = async () => {
+    try {
+      setLoading(true);
+      
+      // Validate required fields
+      if (!quotationData.customer) {
+        alert('Please select a customer');
+        setLoading(false);
+        return;
+      }
+
+      if (!quotationData.expiryDate) {
+        alert('Please select expiry date');
+        setLoading(false);
+        return;
+      }
+
+      if (quotationItems.length === 0) {
+        alert('Please add at least one item');
+        setLoading(false);
+        return;
+      }
+
+      // Validate all items have products selected
+      const invalidItems = quotationItems.filter(item => !item.product);
+      if (invalidItems.length > 0) {
+        alert('Please select a product for all items');
+        setLoading(false);
+        return;
+      }
+
+      // Calculate total amount
+      const totalAmount = quotationItems.reduce((sum, item) => {
+        const subtotal = item.quantity * item.unitPrice;
+        const tax = subtotal * (item.tax / 100);
+        return sum + subtotal + tax;
+      }, 0);
+
+      // Prepare quotation data matching backend SaleRequest DTO
+      const quotation = {
+        customerId: parseInt(quotationData.customer),
+        saleDate: `${quotationData.quotationDate}T00:00:00`, // Backend expects LocalDateTime format: yyyy-MM-ddTHH:mm:ss
+        items: quotationItems.map(item => ({
+          productId: parseInt(item.product),
+          quantity: parseInt(item.quantity),
+          unitPrice: parseFloat(item.unitPrice)
+        })),
+        paymentMethod: 'CASH', // Default for quotations
+        paidAmount: totalAmount, // Backend validates paidAmount >= total, so set to total for quotations
+        notes: `[QUOTATION] Expiry: ${quotationData.expiryDate} | Terms: ${quotationData.terms || 'N/A'} | ${quotationData.notes || ''}`
+      };
+
+      console.log(quotationId ? 'Updating quotation:' : 'Creating quotation:', quotation);
+      
+      let response;
+      if (quotationId) {
+        // Update existing quotation
+        response = await quotationService.update(quotationId, quotation);
+        alert('Quotation updated successfully!');
+      } else {
+        // Create new quotation
+        response = await quotationService.create(quotation);
+        alert('Quotation created successfully!');
+      }
+      
+      console.log('Quotation saved:', response);
+      navigate('/sell/list-quotations');
+    } catch (err) {
+      console.error('Error saving quotation:', err);
+      alert(`Failed to save quotation: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,17 +358,33 @@ const AddQuotation = () => {
               <User className="w-4 h-4 inline mr-1" />
               Customer <span className="text-red-500">*</span>
             </label>
-            <select
-              value={quotationData.customer}
-              onChange={(e) => setQuotationData({...quotationData, customer: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
-            >
-              <option value="">Select Customer</option>
-              <option value="john-doe">John Doe</option>
-              <option value="jane-smith">Jane Smith</option>
-              <option value="acme-corp">Acme Corporation</option>
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={quotationData.customer}
+                onChange={(e) => handleCustomerChange(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              >
+                <option value="">Select Customer</option>
+                {customers.length === 0 ? (
+                  <option disabled>Loading customers...</option>
+                ) : (
+                  customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name || `${customer.firstName} ${customer.lastName}`} - {customer.phone}
+                    </option>
+                  ))
+                )}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowAddCustomerModal(true)}
+                className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center"
+                title="Add New Customer"
+              >
+                <UserPlus className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div>
@@ -147,17 +430,75 @@ const AddQuotation = () => {
           </div>
         </div>
 
+        {/* Customer Details Display */}
+        {selectedCustomer && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg border border-teal-200">
+            <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase flex items-center">
+              <User className="w-4 h-4 mr-2" />
+              Customer Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Customer Name</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {selectedCustomer.name || `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`.trim() || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Phone Number</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {selectedCustomer.phone || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-1">Email</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {selectedCustomer.email || 'N/A'}
+                </p>
+              </div>
+              {selectedCustomer.customerGroup && (
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">Customer Group</p>
+                  <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
+                    selectedCustomer.customerGroup === 'VIP' ? 'bg-purple-100 text-purple-800' :
+                    selectedCustomer.customerGroup === 'WHOLESALE' ? 'bg-blue-100 text-blue-800' :
+                    selectedCustomer.customerGroup === 'RETAIL' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedCustomer.customerGroup}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Products Section */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Items</h3>
             <button
               onClick={addProduct}
+              type="button"
               className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
               <span>Add Item</span>
             </button>
+          </div>
+
+          {/* Product Search */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={searchProduct}
+                onChange={(e) => setSearchProduct(e.target.value)}
+                className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                placeholder="Search products by name or SKU..."
+              />
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -193,8 +534,15 @@ const AddQuotation = () => {
                           className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500"
                         >
                           <option value="">Select</option>
-                          <option value="product1">Product 1</option>
-                          <option value="product2">Product 2</option>
+                          {filteredProducts.length === 0 ? (
+                            <option disabled>No products found</option>
+                          ) : (
+                            filteredProducts.map((product) => (
+                              <option key={product.id} value={product.id}>
+                                {product.name} - {product.sku}
+                              </option>
+                            ))
+                          )}
                         </select>
                       </td>
                       <td className="px-4 py-3">
@@ -358,18 +706,183 @@ const AddQuotation = () => {
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4">
-          <button className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors">
+          <button 
+            onClick={() => navigate('/sell/list-quotations')}
+            type="button"
+            className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors"
+            disabled={loading}
+          >
             Cancel
           </button>
           <button
             onClick={handleSaveQuotation}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2"
+            type="button"
+            disabled={loading}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 disabled:bg-gray-400"
           >
             <FileText className="w-4 h-4" />
-            <span>Save Quotation</span>
+            <span>{loading ? 'Saving...' : 'Save Quotation'}</span>
           </button>
         </div>
       </div>
+
+      {/* Add Customer Modal */}
+      {showAddCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-teal-600 to-teal-700">
+              <div className="flex items-center space-x-2">
+                <UserPlus className="w-5 h-5 text-white" />
+                <h3 className="text-xl font-semibold text-white">Add New Customer</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddCustomerModal(false);
+                  setNewCustomer({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                    customerGroup: 'REGULAR'
+                  });
+                }}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Customer Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Enter customer name"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={newCustomer.phone}
+                    onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="0771234567"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="customer@example.com"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <input
+                    type="text"
+                    value={newCustomer.address}
+                    onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Street address"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={newCustomer.city}
+                    onChange={(e) => setNewCustomer({...newCustomer, city: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="City"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
+                  <input
+                    type="text"
+                    value={newCustomer.state}
+                    onChange={(e) => setNewCustomer({...newCustomer, state: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="State"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
+                  <input
+                    type="text"
+                    value={newCustomer.zipCode}
+                    onChange={(e) => setNewCustomer({...newCustomer, zipCode: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="10001"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer Group</label>
+                  <select
+                    value={newCustomer.customerGroup}
+                    onChange={(e) => setNewCustomer({...newCustomer, customerGroup: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="REGULAR">Regular</option>
+                    <option value="VIP">VIP</option>
+                    <option value="WHOLESALE">Wholesale</option>
+                    <option value="RETAIL">Retail</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 px-6 py-4 border-t bg-gray-50">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddCustomerModal(false);
+                  setNewCustomer({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                    customerGroup: 'REGULAR'
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCustomer}
+                disabled={loading}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center space-x-2 disabled:bg-gray-400"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>{loading ? 'Adding...' : 'Add Customer'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

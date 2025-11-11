@@ -158,6 +158,57 @@ export const draftService = {
   },
 };
 
+// Quotation Services (Quotations are sales with specific marker)
+export const quotationService = {
+  getAll: async () => {
+    const response = await api.get('/sales');
+    // Filter quotations (drafts with quotation marker)
+    const allSales = response?.data?.data || [];
+    return allSales.filter(sale => 
+      sale.status === 'DRAFT' && sale.notes?.includes('[QUOTATION]')
+    );
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/sales/${id}`);
+    return response?.data?.data;
+  },
+
+  create: async (quotationData) => {
+    // Note: quotationData.notes should already contain [QUOTATION] marker
+    const response = await api.post('/sales', {
+      ...quotationData,
+      status: 'DRAFT'
+    });
+    return response?.data;
+  },
+
+  update: async (id, quotationData) => {
+    // Note: quotationData.notes should already contain [QUOTATION] marker
+    const response = await api.put(`/sales/${id}`, {
+      ...quotationData,
+      status: 'DRAFT'
+    });
+    return response?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/sales/${id}`);
+    return response?.data;
+  },
+
+  convertToSale: async (id, saleData) => {
+    // Remove quotation marker and set status to COMPLETED
+    const notes = saleData.notes?.replace('[QUOTATION]', '').trim();
+    const response = await api.put(`/sales/${id}`, {
+      ...saleData,
+      status: 'COMPLETED',
+      notes
+    });
+    return response?.data;
+  },
+};
+
 // Customer Services
 export const customerService = {
   getAll: async () => {
