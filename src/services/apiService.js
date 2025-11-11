@@ -233,7 +233,12 @@ export const categoryService = {
 export const brandService = {
   getAll: async () => {
     const response = await api.get('/brands');
-    return response?.data?.data || [];
+    console.log('brandService.getAll - Raw response:', response);
+    console.log('brandService.getAll - response.data:', response.data);
+    console.log('brandService.getAll - response.data.data:', response.data.data);
+    // Backend returns: { success: true, message: "...", data: [...] }
+    // So we need response.data.data to get the actual brands array
+    return response.data;
   },
 
   getById: async (id) => {
@@ -242,7 +247,10 @@ export const brandService = {
   },
 
   create: async (brandData) => {
+    console.log('brandService.create - Sending data:', brandData);
+    console.log('brandService.create - JSON:', JSON.stringify(brandData));
     const response = await api.post('/brands', brandData);
+    console.log('brandService.create - Response:', response);
     return response?.data;
   },
 

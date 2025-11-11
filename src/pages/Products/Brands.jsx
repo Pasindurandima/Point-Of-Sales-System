@@ -1,14 +1,50 @@
-import React, { useState } from 'react';
-import { X, Tag, FileText, Image } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Tag, FileText } from 'lucide-react';
+import { brandService } from '../../services/apiService';
 
 const Brands = () => {
+  console.log('Brands component loaded');
+  
   const [showAddBrandModal, setShowAddBrandModal] = useState(false);
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
-    brandName: '',
-    description: '',
-    website: '',
-    image: null
+    name: '',
+    description: ''
   });
+
+  // Fetch brands on component mount
+  useEffect(() => {
+    console.log('useEffect running - calling fetchBrands');
+    fetchBrands();
+  }, []);
+
+  const fetchBrands = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching brands...');
+      const response = await brandService.getAll();
+      console.log('Brands API Response:', response);
+      console.log('Response structure:', JSON.stringify(response, null, 2));
+      
+      // Backend returns { success: true, message: "...", data: [...] }
+      // response is already response.data from axios
+      // So we need response.data to get the actual brands array
+      const brandsData = response.data || [];
+      console.log('Brands array to display:', brandsData);
+      console.log('Number of brands:', brandsData.length);
+      
+      setBrands(brandsData);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching brands:', err);
+      console.error('Error response:', err.response);
+      setError(`Failed to load brands: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -18,11 +54,37 @@ const Brands = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Brand Data:', formData);
-    setShowAddBrandModal(false);
-    // API integration here
+    try {
+      console.log('Creating brand with data:', formData);
+      console.log('FormData JSON:', JSON.stringify(formData));
+      const response = await brandService.create(formData);
+      console.log('Brand created successfully:', response);
+      setShowAddBrandModal(false);
+      setFormData({ name: '', description: '' });
+      fetchBrands(); // Refresh the brand list
+    } catch (err) {
+      console.error('Error creating brand:', err);
+      console.error('Error response:', err.response);
+      console.error('Error response data:', err.response?.data);
+      console.error('Error response status:', err.response?.status);
+      
+      const errorMessage = err.response?.data?.message || err.response?.data?.errors || err.message;
+      alert(`Failed to create brand: ${errorMessage}`);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this brand?')) {
+      try {
+        await brandService.delete(id);
+        fetchBrands(); // Refresh the brand list
+      } catch (err) {
+        console.error('Error deleting brand:', err);
+        alert('Failed to delete brand. Please try again.');
+      }
+    }
   };
 
   return (
@@ -45,45 +107,52 @@ const Brands = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Samsung</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Electronics manufacturer</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">8 products</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Sony</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Consumer electronics</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">5 products</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Bosch</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Power tools and equipment</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">12 products</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {loading && (
+            <div className="text-center py-8 text-gray-600">Loading brands...</div>
+          )}
+          
+          {error && (
+            <div className="text-center py-8 text-red-600">{error}</div>
+          )}
+
+          {!loading && !error && brands.length === 0 && (
+            <div className="text-center py-8 text-gray-600">
+              No brands found. Click "Add Brand" to create one.
+            </div>
+          )}
+
+          {!loading && !error && brands.length > 0 && (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {brands.map((brand) => (
+                  <tr key={brand.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{brand.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{brand.description || 'No description'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {brand.createdAt ? new Date(brand.createdAt).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                      <button 
+                        onClick={() => handleDelete(brand.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -118,8 +187,8 @@ const Brands = () => {
                       <Tag className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
                       <input
                         type="text"
-                        name="brandName"
-                        value={formData.brandName}
+                        name="name"
+                        value={formData.name}
                         onChange={handleInputChange}
                         className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                         placeholder="e.g., Samsung, Sony, Bosch"
@@ -131,7 +200,7 @@ const Brands = () => {
                   {/* Description */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Description <span className="text-red-500">*</span>
+                      Description
                     </label>
                     <div className="relative">
                       <FileText className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
@@ -142,47 +211,7 @@ const Brands = () => {
                         className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                         placeholder="Describe the brand"
                         rows="3"
-                        required
                       />
-                    </div>
-                  </div>
-
-                  {/* Website */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Website
-                    </label>
-                    <input
-                      type="url"
-                      name="website"
-                      value={formData.website}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="https://www.brand.com"
-                    />
-                  </div>
-
-                  {/* Brand Logo */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Brand Logo
-                    </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                      <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <input
-                        type="file"
-                        name="image"
-                        accept="image/*"
-                        className="hidden"
-                        id="brandLogo"
-                      />
-                      <label
-                        htmlFor="brandLogo"
-                        className="text-sm text-teal-600 hover:text-teal-700 cursor-pointer font-semibold"
-                      >
-                        Click to upload logo
-                      </label>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 2MB</p>
                     </div>
                   </div>
                 </div>

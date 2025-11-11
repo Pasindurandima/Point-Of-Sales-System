@@ -26,38 +26,13 @@ export default function Navbar() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      console.log('Fetching notifications from backend...');
-      const data = await notificationService.getAll();
-      console.log('Notifications received:', data);
+      // Temporarily disabled - notifications endpoint has issues
+      // const data = await notificationService.getAll();
       
-      // Map backend data to include icons based on type
-      const mappedNotifications = data.map(notification => {
-        let icon;
-        switch(notification.type?.toLowerCase()) {
-          case 'order':
-          case 'sale':
-            icon = ShoppingCart;
-            break;
-          case 'stock':
-          case 'inventory':
-            icon = Package;
-            break;
-          case 'payment':
-            icon = DollarSign;
-            break;
-          case 'report':
-            icon = TrendingUp;
-            break;
-          default:
-            icon = Bell;
-        }
-        return { ...notification, icon };
-      });
-      
-      setNotifications(mappedNotifications);
+      // Use empty array for now
+      setNotifications([]);
     } catch (error) {
       console.error('Error fetching notifications:', error.message);
-      // Keep empty array on error
       setNotifications([]);
     } finally {
       setLoading(false);
