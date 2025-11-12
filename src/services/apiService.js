@@ -421,3 +421,43 @@ export const notificationService = {
     return response?.data?.data;
   },
 };
+
+// Label Print Services
+export const labelPrintService = {
+  create: async (data) => {
+    const response = await api.post('/label-prints', data);
+    return response?.data?.data;
+  },
+
+  getAll: async () => {
+    const response = await api.get('/label-prints');
+    return response?.data?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/label-prints/${id}`);
+    return response?.data?.data;
+  },
+
+  getByProductId: async (productId) => {
+    const response = await api.get(`/label-prints/product/${productId}`);
+    return response?.data?.data || [];
+  },
+
+  getByDateRange: async (startDate, endDate) => {
+    const response = await api.get('/label-prints/date-range', {
+      params: { startDate, endDate }
+    });
+    return response?.data?.data || [];
+  },
+
+  getTotalForProduct: async (productId) => {
+    const response = await api.get(`/label-prints/product/${productId}/total`);
+    return response?.data?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/label-prints/${id}`);
+    return response?.data;
+  },
+};
