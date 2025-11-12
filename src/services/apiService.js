@@ -461,3 +461,38 @@ export const labelPrintService = {
     return response?.data;
   },
 };
+
+// Unit Services
+export const unitService = {
+  getAll: async () => {
+    const response = await api.get('/units');
+    return response?.data?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/units/${id}`);
+    return response?.data?.data;
+  },
+
+  create: async (unitData) => {
+    const response = await api.post('/units', unitData);
+    return response?.data;
+  },
+
+  update: async (id, unitData) => {
+    const response = await api.put(`/units/${id}`, unitData);
+    return response?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/units/${id}`);
+    return response?.data;
+  },
+
+  search: async (query) => {
+    const response = await api.get('/units/search', {
+      params: { query }
+    });
+    return response?.data?.data || [];
+  },
+};
