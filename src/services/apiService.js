@@ -158,55 +158,27 @@ export const draftService = {
   },
 };
 
-// Quotation Services (Quotations are sales with specific marker)
+// Quotation Services - NEW dedicated quotations table
 export const quotationService = {
-  getAll: async () => {
-    const response = await api.get('/sales');
-    // Filter quotations (drafts with quotation marker)
-    const allSales = response?.data?.data || [];
-    return allSales.filter(sale => 
-      sale.status === 'DRAFT' && sale.notes?.includes('[QUOTATION]')
-    );
-  },
+  getAll: () => api.get('/quotations'),
+  
+  getById: (id) => api.get(`/quotations/${id}`),
 
-  getById: async (id) => {
-    const response = await api.get(`/sales/${id}`);
-    return response?.data?.data;
-  },
+  create: (quotationData) => api.post('/quotations', quotationData),
 
-  create: async (quotationData) => {
-    // Note: quotationData.notes should already contain [QUOTATION] marker
-    const response = await api.post('/sales', {
-      ...quotationData,
-      status: 'DRAFT'
-    });
-    return response?.data;
-  },
+  update: (id, quotationData) => api.put(`/quotations/${id}`, quotationData),
 
-  update: async (id, quotationData) => {
-    // Note: quotationData.notes should already contain [QUOTATION] marker
-    const response = await api.put(`/sales/${id}`, {
-      ...quotationData,
-      status: 'DRAFT'
-    });
-    return response?.data;
-  },
+  delete: (id) => api.delete(`/quotations/${id}`),
 
-  delete: async (id) => {
-    const response = await api.delete(`/sales/${id}`);
-    return response?.data;
-  },
-
-  convertToSale: async (id, saleData) => {
-    // Remove quotation marker and set status to COMPLETED
-    const notes = saleData.notes?.replace('[QUOTATION]', '').trim();
-    const response = await api.put(`/sales/${id}`, {
-      ...saleData,
-      status: 'COMPLETED',
-      notes
-    });
-    return response?.data;
-  },
+  convertToSale: (id) => api.post(`/quotations/${id}/convert-to-sale`),
+  
+  updateStatus: (id, status) => api.put(`/quotations/${id}/status?status=${status}`),
+  
+  searchQuotations: (searchTerm) => api.get(`/quotations/search?searchTerm=${searchTerm}`),
+  
+  getByCustomer: (customerId) => api.get(`/quotations/customer/${customerId}`),
+  
+  getByStatus: (status) => api.get(`/quotations/status/${status}`)
 };
 
 // Customer Services

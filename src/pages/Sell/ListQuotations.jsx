@@ -31,8 +31,10 @@ const ListQuotations = () => {
   const fetchQuotations = async () => {
     try {
       setLoading(true);
-      const quotationsData = await quotationService.getAll();
-      setQuotations(quotationsData || []);
+      const response = await quotationService.getAll();
+      if (response.data && response.data.success) {
+        setQuotations(response.data.data || []);
+      }
       setError('');
     } catch (err) {
       console.error('Error fetching quotations:', err);
@@ -44,8 +46,10 @@ const ListQuotations = () => {
 
   const fetchCustomers = async () => {
     try {
-      const customersData = await customerService.getAll();
-      setCustomers(customersData || []);
+      const response = await customerService.getAll();
+      if (response.data && response.data.success) {
+        setCustomers(response.data.data || []);
+      }
     } catch (err) {
       console.error('Error fetching customers:', err);
     }
@@ -83,12 +87,13 @@ const ListQuotations = () => {
   const filteredQuotations = quotations.filter(quotation => {
     const matchesSearch = searchTerm === '' || 
       quotation.id.toString().includes(searchTerm) ||
+      (quotation.customerName && quotation.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (quotation.notes && quotation.notes.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesCustomer = filterCustomer === '' || quotation.customerId === parseInt(filterCustomer);
     
-    const matchesDateFrom = filterDateFrom === '' || new Date(quotation.saleDate) >= new Date(filterDateFrom);
-    const matchesDateTo = filterDateTo === '' || new Date(quotation.saleDate) <= new Date(filterDateTo);
+    const matchesDateFrom = filterDateFrom === '' || new Date(quotation.quotationDate) >= new Date(filterDateFrom);
+    const matchesDateTo = filterDateTo === '' || new Date(quotation.quotationDate) <= new Date(filterDateTo);
     
     return matchesSearch && matchesCustomer && matchesDateFrom && matchesDateTo;
   });
@@ -327,26 +332,25 @@ const ListQuotations = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredQuotations.map((quotation, index) => {
-                  const parsedNotes = parseQuotationNotes(quotation.notes);
                   return (
                     <tr key={quotation.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         #{quotation.id}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {getCustomerName(quotation.customerId)}
+                        {quotation.customerName}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {quotation.saleDate}
+                        {new Date(quotation.quotationDate).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {parsedNotes.expiryDate || 'N/A'}
+                        {quotation.expiryDate || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                         {quotation.items ? quotation.items.length : 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        රු {calculateTotal(quotation.items).toFixed(2)}
+                        රු {(quotation.totalAmount || 0).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm space-x-2">
                         <button
@@ -429,11 +433,11 @@ const ListQuotations = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">Customer Name</p>
-                      <p className="font-semibold text-gray-900">{getCustomerName(selectedQuotation.customerId)}</p>
+                      <p className="font-semibold text-gray-900">{selectedQuotation.customerName}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Sale Date</p>
-                      <p className="font-semibold text-gray-900">{selectedQuotation.saleDate}</p>
+                      <p className="text-sm text-gray-600">Quotation Date</p>
+                      <p className="font-semibold text-gray-900">{new Date(selectedQuotation.quotationDate).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -448,45 +452,38 @@ const ListQuotations = () => {
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-teal-600" />
                       <p className="font-semibold text-gray-900">
-                        {parseQuotationNotes(selectedQuotation.notes).expiryDate || 'N/A'}
+                        {selectedQuotation.expiryDate || 'N/A'}
                       </p>
                     </div>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Payment Method</p>
-                    <p className="font-semibold text-gray-900">{selectedQuotation.paymentMethod}</p>
+                    <p className="text-sm text-gray-600 mb-1">Status</p>
+                    <p className="font-semibold text-gray-900">{selectedQuotation.status}</p>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Paid Amount</p>
-                    <p className="font-semibold text-gray-900">රු {selectedQuotation.paidAmount.toFixed(2)}</p>
+                    <p className="text-sm text-gray-600 mb-1">Total Amount</p>
+                    <p className="font-semibold text-gray-900">රු {(selectedQuotation.totalAmount || 0).toFixed(2)}</p>
                   </div>
                 </div>
               </div>
 
               {/* Terms & Notes */}
-              {(() => {
-                const parsedNotes = parseQuotationNotes(selectedQuotation.notes);
-                return (
-                  <>
-                    {parsedNotes.terms && (
-                      <div className="mb-6">
-                        <h4 className="text-lg font-semibold text-gray-800 mb-3">Terms & Conditions</h4>
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                          <p className="text-gray-800">{parsedNotes.terms}</p>
-                        </div>
-                      </div>
-                    )}
-                    {parsedNotes.actualNotes && (
-                      <div className="mb-6">
-                        <h4 className="text-lg font-semibold text-gray-800 mb-3">Notes</h4>
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                          <p className="text-gray-700">{parsedNotes.actualNotes}</p>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
+              {selectedQuotation.terms && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Terms & Conditions</h4>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-gray-800">{selectedQuotation.terms}</p>
+                  </div>
+                </div>
+              )}
+              {selectedQuotation.notes && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Notes</h4>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <p className="text-gray-700">{selectedQuotation.notes}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Items Table */}
               <div className="mb-6">
@@ -504,16 +501,13 @@ const ListQuotations = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {selectedQuotation.items && selectedQuotation.items.map((item, index) => {
-                        const subtotal = item.quantity * item.unitPrice;
-                        const tax = subtotal * (item.taxRate / 100);
-                        const total = subtotal + tax;
                         return (
                           <tr key={index}>
-                            <td className="px-4 py-3 text-sm text-gray-900">Product #{item.productId}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{item.productName || `Product #${item.productId}`}</td>
                             <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.quantity}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700 text-right">රු {item.unitPrice.toFixed(2)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700 text-right">{item.taxRate}%</td>
-                            <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">රු {total.toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700 text-right">රු {(item.unitPrice || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700 text-right">{(item.taxRate || 0)}%</td>
+                            <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">රු {(item.totalAmount || 0).toFixed(2)}</td>
                           </tr>
                         );
                       })}
@@ -524,7 +518,7 @@ const ListQuotations = () => {
                           Grand Total:
                         </td>
                         <td className="px-4 py-3 text-right text-lg font-bold text-teal-600">
-                          රු {calculateTotal(selectedQuotation.items).toFixed(2)}
+                          රු {(selectedQuotation.totalAmount || 0).toFixed(2)}
                         </td>
                       </tr>
                     </tfoot>

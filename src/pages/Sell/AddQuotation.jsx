@@ -306,18 +306,19 @@ const AddQuotation = () => {
         return sum + subtotal + tax;
       }, 0);
 
-      // Prepare quotation data matching backend SaleRequest DTO
+      // Prepare quotation data matching backend QuotationRequest DTO
       const quotation = {
         customerId: parseInt(quotationData.customer),
-        saleDate: `${quotationData.quotationDate}T00:00:00`, // Backend expects LocalDateTime format: yyyy-MM-ddTHH:mm:ss
+        quotationDate: `${quotationData.quotationDate}T00:00:00`, // LocalDateTime format
+        expiryDate: quotationData.expiryDate, // LocalDate format
+        terms: quotationData.terms || '',
+        notes: quotationData.notes || '',
         items: quotationItems.map(item => ({
           productId: parseInt(item.product),
           quantity: parseInt(item.quantity),
-          unitPrice: parseFloat(item.unitPrice)
-        })),
-        paymentMethod: 'CASH', // Default for quotations
-        paidAmount: totalAmount, // Backend validates paidAmount >= total, so set to total for quotations
-        notes: `[QUOTATION] Expiry: ${quotationData.expiryDate} | Terms: ${quotationData.terms || 'N/A'} | ${quotationData.notes || ''}`
+          unitPrice: parseFloat(item.unitPrice),
+          taxRate: parseFloat(item.tax)
+        }))
       };
 
       console.log(quotationId ? 'Updating quotation:' : 'Creating quotation:', quotation);
