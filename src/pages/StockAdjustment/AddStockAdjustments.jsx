@@ -56,10 +56,13 @@ const AddStockAdjustments = () => {
 
   const fetchProducts = async () => {
     try {
+      console.log('Fetching products from API...');
       const data = await productService.getAll();
+      console.log('Products fetched successfully:', data.length, data);
       setProducts(data);
     } catch (error) {
       console.error('Error fetching products:', error);
+      alert('Failed to fetch products. Please check your backend connection.');
     }
   };
 
@@ -73,11 +76,16 @@ const AddStockAdjustments = () => {
 
   const handleSearch = (value) => {
     setSearchTerm(value);
+    console.log('Search term:', value);
+    console.log('Total products:', products.length);
+    
     if (value.trim()) {
-      const filtered = products.filter(product =>
-        product.name.toLowerCase().includes(value.toLowerCase()) ||
-        product.sku?.toLowerCase().includes(value.toLowerCase())
-      );
+      const filtered = products.filter(product => {
+        const nameMatch = product.name && product.name.toLowerCase().includes(value.toLowerCase());
+        const skuMatch = product.sku && product.sku.toLowerCase().includes(value.toLowerCase());
+        return nameMatch || skuMatch;
+      });
+      console.log('Filtered products:', filtered.length, filtered);
       setFilteredProducts(filtered);
     } else {
       setFilteredProducts([]);
@@ -284,30 +292,44 @@ const AddStockAdjustments = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Add Products</label>
             <div className="border rounded-lg p-4">
               <div className="relative mb-4">
-                <input
-                  type="text"
-                  placeholder="Search and select products..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 pl-10"
-                />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 z-10" />
+                  <input
+                    type="text"
+                    placeholder="Search and select products..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 pl-10"
+                    autoComplete="off"
+                  />
+                </div>
                 
                 {filteredProducts.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto left-0">
                     {filteredProducts.map(product => (
                       <div
                         key={product.id}
                         onClick={() => addProductToAdjustment(product)}
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
+                        className="px-4 py-3 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                       >
-                        <div>
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-gray-500">SKU: {product.sku} | Stock: {product.quantity}</div>
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{product.name}</div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              <span className="font-medium">SKU:</span> {product.sku || 'N/A'} | 
+                              <span className="font-medium"> Stock:</span> {product.quantity || 0}
+                            </div>
+                          </div>
+                          <Plus className="h-5 w-5 text-teal-600 ml-2 flex-shrink-0" />
                         </div>
-                        <Plus className="h-5 w-5 text-teal-600" />
                       </div>
                     ))}
+                  </div>
+                )}
+                
+                {searchTerm && filteredProducts.length === 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 left-0">
+                    <p className="text-gray-500 text-center">No products found</p>
                   </div>
                 )}
               </div>
