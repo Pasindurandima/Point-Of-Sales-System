@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, Smartphone, Building2, Check, X, User, Calendar } from 'lucide-react';
 import { productService, customerService } from '../../services/apiService';
 
 const POS = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const editSale = location.state?.editSale;
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -63,6 +67,43 @@ const POS = () => {
     fetchProducts();
     fetchCustomers();
   }, []);
+
+  // Load edit sale data if present
+  useEffect(() => {
+    if (editSale && products.length > 0) {
+      // Load customer
+      if (editSale.customerId) {
+        const customer = customers.find(c => c.id === editSale.customerId);
+        if (customer) {
+          setSelectedCustomer(customer);
+        }
+      }
+
+      // Load cart items from sale
+      if (editSale.items && editSale.items.length > 0) {
+        const cartItems = editSale.items.map(item => {
+          const product = products.find(p => p.id === item.productId);
+          return {
+            id: item.productId || item.id,
+            name: item.productName || (product?.name) || 'Unknown Product',
+            price: item.unitPrice || (product?.price) || 0,
+            quantity: item.quantity || 1,
+            sku: product?.sku || '',
+            stock: product?.stock || 0,
+            image: product?.image || '📦',
+            taxRate: item.taxRate || (product?.taxRate) || 0,
+          };
+        });
+        setCart(cartItems);
+      }
+
+      // Load discount and notes
+      setDiscount(editSale.discountPercent || 0);
+      setNotes(editSale.sellNote || '');
+      setPaidAmount(editSale.paidAmount || '');
+      setPaymentMethod(editSale.paymentMethod || 'CASH');
+    }
+  }, [editSale, products, customers]);
 
   const addToCart = (product) => {
     const existingItem = cart.find(item => item.id === product.id);
@@ -207,8 +248,17 @@ const POS = () => {
     <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
       <div className="px-6 py-4 flex items-center justify-between bg-white shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Point of Sale (POS)</h1>
-          <p className="text-gray-600 text-sm">Add products to cart and complete the sale</p>
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
+            <span>POS - Point of Sale</span>
+            {editSale && (
+              <span className="text-sm bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-semibold">
+                Editing: {editSale.invoiceNumber || `INV-${editSale.id}`}
+              </span>
+            )}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {editSale ? 'Edit and update the sale' : 'Add products and complete the sale'}
+          </p>
         </div>
         <div className="text-right">
           <p className="text-xs text-gray-500">Date: {new Date().toLocaleDateString()}</p>
