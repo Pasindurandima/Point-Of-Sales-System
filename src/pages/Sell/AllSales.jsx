@@ -33,7 +33,50 @@ const AllSales = () => {
     try {
       setLoading(true);
       const result = await saleService.getAll();
-      setSales(result || []);
+      console.log('Fetched sales from backend:', result);
+      
+      // Map backend response to frontend format
+      const mappedSales = (result || []).map(sale => ({
+        id: sale.id,
+        invoiceNumber: sale.invoiceNumber,
+        saleDate: sale.saleDate,
+        customerId: sale.customer?.id || null,
+        customerName: sale.customer?.name || 'Walk-In Customer',
+        customerPhone: sale.customer?.mobile || sale.customer?.phone || '-',
+        customerAddress: sale.customer?.address || '-',
+        items: (sale.items || []).map(item => ({
+          id: item.id,
+          productId: item.product?.id,
+          productName: item.product?.name || 'Unknown Product',
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate,
+          tax: item.taxAmount,
+          priceIncTax: item.unitPrice,
+          subtotal: item.subtotal
+        })),
+        subtotal: sale.subtotal,
+        totalAmount: sale.total,
+        paidAmount: sale.paidAmount,
+        paymentMethod: sale.paymentMethod || 'CASH',
+        paymentStatus: sale.paidAmount >= sale.total ? 'PAID' : sale.paidAmount > 0 ? 'PARTIAL' : 'PENDING',
+        discount: sale.discount || 0,
+        discountPercent: sale.subtotal > 0 ? (sale.discount / sale.subtotal * 100).toFixed(2) : 0,
+        orderTax: sale.tax || 0,
+        returnDue: 0,
+        totalItems: sale.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+        itemCount: sale.items?.length || 0,
+        sellNote: sale.notes || '',
+        staffNote: '',
+        shippingStatus: 'PENDING',
+        shippingCost: 0,
+        roundOff: 0,
+        addedBy: 'Admin',
+        createdBy: 'Admin',
+        status: sale.status
+      }));
+      
+      setSales(mappedSales);
     } catch (error) {
       console.error('Error fetching sales:', error);
       setSales([]);

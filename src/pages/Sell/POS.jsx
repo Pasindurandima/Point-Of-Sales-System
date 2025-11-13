@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, Smartphone, Building2, Check, X, User, Calendar } from 'lucide-react';
-import { productService, customerService } from '../../services/apiService';
+import { productService, customerService, saleService } from '../../services/apiService';
 
 const POS = () => {
   const location = useLocation();
@@ -71,8 +71,10 @@ const POS = () => {
   // Load edit sale data if present
   useEffect(() => {
     if (editSale && products.length > 0) {
+      console.log('Loading sale for editing:', editSale);
+      
       // Load customer
-      if (editSale.customerId) {
+      if (editSale.customerId && customers.length > 0) {
         const customer = customers.find(c => c.id === editSale.customerId);
         if (customer) {
           setSelectedCustomer(customer);
@@ -84,23 +86,30 @@ const POS = () => {
         const cartItems = editSale.items.map(item => {
           const product = products.find(p => p.id === item.productId);
           return {
-            id: item.productId || item.id,
+            id: item.productId,
             name: item.productName || (product?.name) || 'Unknown Product',
-            price: item.unitPrice || (product?.price) || 0,
+            price: parseFloat(item.unitPrice) || 0,
             quantity: item.quantity || 1,
             sku: product?.sku || '',
             stock: product?.stock || 0,
             image: product?.image || '📦',
-            taxRate: item.taxRate || (product?.taxRate) || 0,
+            taxRate: parseFloat(item.taxRate) || 0,
           };
         });
         setCart(cartItems);
       }
 
-      // Load discount and notes
-      setDiscount(editSale.discountPercent || 0);
-      setNotes(editSale.sellNote || '');
-      setPaidAmount(editSale.paidAmount || '');
+      // Load discount - convert from amount to percentage if needed
+      if (editSale.discountPercent) {
+        setDiscount(parseFloat(editSale.discountPercent) || 0);
+      } else if (editSale.discount && editSale.subtotal) {
+        const discountPercent = (parseFloat(editSale.discount) / parseFloat(editSale.subtotal)) * 100;
+        setDiscount(discountPercent || 0);
+      }
+
+      // Load notes and payment info
+      setNotes(editSale.sellNote || editSale.notes || '');
+      setPaidAmount(editSale.paidAmount ? editSale.paidAmount.toString() : '');
       setPaymentMethod(editSale.paymentMethod || 'CASH');
     }
   }, [editSale, products, customers]);
@@ -165,7 +174,7 @@ const POS = () => {
     setShowPaymentModal(true);
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     const total = calculateTotal();
     const paid = parseFloat(paidAmount) || 0;
 
@@ -174,49 +183,69 @@ const POS = () => {
       return;
     }
 
-    // Generate invoice number
-    const invoiceNumber = `INV${new Date().getTime()}`;
-    
-    // Prepare sale data
-    const saleData = {
-      invoiceNumber,
-      customer: selectedCustomer,
-      saleDate: new Date().toISOString(),
-      items: cart.map(item => ({
-        productId: item.id,
-        productName: item.name,
-        sku: item.sku,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        taxRate: item.taxRate,
-        subtotal: item.price * item.quantity,
-        taxAmount: (item.price * item.quantity * item.taxRate / 100),
-        total: (item.price * item.quantity) + (item.price * item.quantity * item.taxRate / 100)
-      })),
-      subtotal: calculateSubtotal(),
-      tax: calculateTax(),
-      discount: discount,
-      total: total,
-      paymentMethod: paymentMethod,
-      paidAmount: paid,
-      changeAmount: calculateChange(),
-      notes: notes
-    };
+    try {
+      // Prepare sale data for backend (matching API spec)
+      const saleData = {
+        customerId: selectedCustomer?.id || null,
+        saleDate: new Date().toISOString(),
+        items: cart.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          taxRate: item.taxRate || 0
+        })),
+        discount: (calculateSubtotal() * discount) / 100,
+        paymentMethod: paymentMethod,
+        paidAmount: paid,
+        notes: notes || ''
+      };
 
-    console.log('Sale Completed:', saleData);
-    
-    // Store last invoice for success modal
-    setLastInvoice(saleData);
-    
-    // Show success modal
-    setShowPaymentModal(false);
-    setShowSuccessModal(true);
-    
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setShowSuccessModal(false);
-      resetSale();
-    }, 3000);
+      console.log('Saving sale to backend:', saleData);
+      
+      // Save to backend
+      let response;
+      if (editSale) {
+        // Update existing sale
+        response = await saleService.update(editSale.id, saleData);
+        console.log('Sale updated:', response);
+      } else {
+        // Create new sale
+        response = await saleService.create(saleData);
+        console.log('Sale created:', response);
+      }
+      
+      // Prepare display data for success modal
+      const displayData = {
+        invoiceNumber: response.data?.invoiceNumber || `INV${Date.now()}`,
+        totalAmount: total,
+        paymentMethod: paymentMethod,
+        paidAmount: paid,
+        customerId: selectedCustomer?.id || null,
+        customerName: selectedCustomer?.name || 'Walk-In Customer'
+      };
+      
+      // Store last invoice for success modal
+      setLastInvoice(displayData);
+      
+      // Show success modal
+      setShowPaymentModal(false);
+      setShowSuccessModal(true);
+      
+      // Reset form and navigate after 3 seconds
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        resetSale();
+        // If editing, navigate back to AllSales
+        if (editSale) {
+          navigate('/sell/all-sales');
+        }
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error saving sale:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
+      alert(`Failed to save sale: ${errorMsg}\n\nPlease check the console for details.`);
+    }
   };
 
   const resetSale = () => {
@@ -648,8 +677,12 @@ const POS = () => {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Check className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-1">Payment Successful!</h3>
-              <p className="text-gray-600 text-sm mb-4">Transaction completed successfully</p>
+              <h3 className="text-xl font-bold text-gray-800 mb-1">
+                {editSale ? 'Sale Updated!' : 'Payment Successful!'}
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">
+                {editSale ? 'Sale has been updated successfully' : 'Transaction completed successfully'}
+              </p>
               
               <div className="bg-gray-50 rounded-lg p-3 mb-4">
                 <p className="text-xs text-gray-500 mb-1">Invoice Number</p>
@@ -659,7 +692,7 @@ const POS = () => {
               <div className="grid grid-cols-2 gap-3 text-left mb-4">
                 <div className="bg-gray-50 rounded p-2">
                   <p className="text-xs text-gray-500 mb-1">Total Amount</p>
-                  <p className="font-bold text-sm">Rs {lastInvoice.total.toFixed(2)}</p>
+                  <p className="font-bold text-sm">Rs {lastInvoice.totalAmount?.toFixed(2) || '0.00'}</p>
                 </div>
                 <div className="bg-gray-50 rounded p-2">
                   <p className="text-xs text-gray-500 mb-1">Payment Method</p>
@@ -669,11 +702,13 @@ const POS = () => {
                   <>
                     <div className="bg-gray-50 rounded p-2">
                       <p className="text-xs text-gray-500 mb-1">Amount Paid</p>
-                      <p className="font-bold text-sm">Rs {lastInvoice.paidAmount.toFixed(2)}</p>
+                      <p className="font-bold text-sm">Rs {lastInvoice.paidAmount?.toFixed(2) || '0.00'}</p>
                     </div>
                     <div className="bg-green-50 rounded p-2">
                       <p className="text-xs text-gray-500 mb-1">Change</p>
-                      <p className="font-bold text-sm text-green-600">Rs {lastInvoice.changeAmount.toFixed(2)}</p>
+                      <p className="font-bold text-sm text-green-600">
+                        Rs {((lastInvoice.paidAmount || 0) - (lastInvoice.totalAmount || 0)).toFixed(2)}
+                      </p>
                     </div>
                   </>
                 )}
