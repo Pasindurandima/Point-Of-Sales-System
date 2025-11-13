@@ -69,88 +69,96 @@ const AllSales = () => {
   });
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Header Section - Fixed */}
+      <div className="flex-shrink-0 p-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-800">All Sales</h1>
         <p className="text-gray-600 mt-2">View all sales transactions - Total: {sales.length}</p>
       </div>
       
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
+      {/* Filters Section - Fixed */}
+      <div className="flex-shrink-0 px-6 pb-4">
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search by invoice or customer..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
               <input
-                type="text"
-                placeholder="Search by invoice or customer..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
+              {(searchQuery || dateFilter) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setDateFilter('');
+                  }}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            {(searchQuery || dateFilter) && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setDateFilter('');
-                }}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
-              >
-                Clear Filters
-              </button>
-            )}
+            <button 
+              onClick={handleAddSale}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>New Sale (POS)</span>
+            </button>
           </div>
-          <button 
-            onClick={handleAddSale}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span>New Sale (POS)</span>
-          </button>
         </div>
-        
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-teal-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading sales...</p>
-          </div>
-        ) : filteredSales.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p className="text-lg font-semibold">No sales found</p>
-            <p className="text-sm mt-2">
-              {searchQuery || dateFilter ? 'Try adjusting your filters' : 'Start by creating a new sale'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Actions</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice No.</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Number</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Status</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Paid</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sell Due</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sell Return Due</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Shipping Status</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Items</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added By</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+      </div>
+      
+      {/* Table Section - Scrollable */}
+      <div className="flex-1 px-6 pb-6 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-md h-full flex flex-col">
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-teal-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading sales...</p>
+              </div>
+            </div>
+          ) : filteredSales.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-gray-500">
+              <div className="text-center">
+                <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-semibold">No sales found</p>
+                <p className="text-sm mt-2">
+                  {searchQuery || dateFilter ? 'Try adjusting your filters' : 'Start by creating a new sale'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-auto flex-1">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice No.</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Paid</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sell Due</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sell Return Due</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Items</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added By</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                 {filteredSales
                   .sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate))
                   .map((sale) => {
@@ -253,29 +261,6 @@ const AllSales = () => {
                           {sale.customerName || 'Walk-in Customer'}
                         </td>
 
-                        {/* Contact Number */}
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {sale.customerPhone || sale.contactNumber || '-'}
-                        </td>
-
-                        {/* Location */}
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {sale.customerAddress || sale.location || '-'}
-                        </td>
-
-                        {/* Payment Status */}
-                        <td className="px-4 py-4 whitespace-nowrap text-center">
-                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            sale.paymentStatus === 'PAID' 
-                              ? 'bg-green-100 text-green-800'
-                              : sale.paymentStatus === 'PARTIAL'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {sale.paymentStatus || 'PENDING'}
-                          </span>
-                        </td>
-
                         {/* Payment Method */}
                         <td className="px-4 py-4 whitespace-nowrap text-center">
                           <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -307,21 +292,6 @@ const AllSales = () => {
                           Rs {(sale.returnDue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
 
-                        {/* Shipping Status */}
-                        <td className="px-4 py-4 whitespace-nowrap text-center">
-                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            sale.shippingStatus === 'DELIVERED'
-                              ? 'bg-green-100 text-green-800'
-                              : sale.shippingStatus === 'SHIPPED'
-                              ? 'bg-blue-100 text-blue-800'
-                              : sale.shippingStatus === 'PROCESSING'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {sale.shippingStatus || 'N/A'}
-                          </span>
-                        </td>
-
                         {/* Total Items */}
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-900">
                           {sale.totalItems || sale.itemCount || 0}
@@ -334,10 +304,11 @@ const AllSales = () => {
                       </tr>
                     );
                   })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
