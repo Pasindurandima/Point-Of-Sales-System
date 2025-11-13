@@ -13,6 +13,8 @@ import com.example.demo.dto.PurchaseItemResponse;
 import com.example.demo.dto.PurchaseResponse;
 import com.example.demo.dto.SaleItemResponse;
 import com.example.demo.dto.SaleResponse;
+import com.example.demo.dto.StockAdjustmentResponse;
+import com.example.demo.dto.StockAdjustmentItemResponse;
 import com.example.demo.dto.SupplierResponse;
 import com.example.demo.entity.Brand;
 import com.example.demo.entity.Category;
@@ -23,6 +25,8 @@ import com.example.demo.entity.Purchase;
 import com.example.demo.entity.PurchaseItem;
 import com.example.demo.entity.Sale;
 import com.example.demo.entity.SaleItem;
+import com.example.demo.entity.StockAdjustment;
+import com.example.demo.entity.StockAdjustmentItem;
 import com.example.demo.entity.Supplier;
 
 @Component
@@ -226,6 +230,41 @@ public class DtoMapper {
                 .documentUrl(expense.getDocumentUrl())
                 .isActive(expense.getIsActive())
                 .createdAt(expense.getCreatedAt())
+                .build();
+    }
+
+    // Stock Adjustment mappings
+    public StockAdjustmentResponse toStockAdjustmentResponse(StockAdjustment stockAdjustment) {
+        return StockAdjustmentResponse.builder()
+                .id(stockAdjustment.getId())
+                .referenceNumber(stockAdjustment.getReferenceNumber())
+                .adjustmentDate(stockAdjustment.getAdjustmentDate())
+                .location(stockAdjustment.getLocation())
+                .adjustmentType(stockAdjustment.getAdjustmentType().name())
+                .reason(stockAdjustment.getReason().name())
+                .items(stockAdjustment.getItems().stream()
+                        .map(this::toStockAdjustmentItemResponse)
+                        .collect(Collectors.toList()))
+                .totalAmount(stockAdjustment.getTotalAmount())
+                .totalQuantity(stockAdjustment.getTotalQuantity())
+                .notes(stockAdjustment.getNotes())
+                .documentPath(stockAdjustment.getDocumentPath())
+                .userName(stockAdjustment.getUser() != null ? stockAdjustment.getUser().getUsername() : null)
+                .userId(stockAdjustment.getUser() != null ? stockAdjustment.getUser().getId() : null)
+                .createdAt(stockAdjustment.getCreatedAt())
+                .updatedAt(stockAdjustment.getUpdatedAt())
+                .build();
+    }
+
+    public StockAdjustmentItemResponse toStockAdjustmentItemResponse(StockAdjustmentItem item) {
+        return StockAdjustmentItemResponse.builder()
+                .id(item.getId())
+                .product(toProductResponse(item.getProduct()))
+                .adjustmentType(item.getAdjustmentType().name())
+                .currentStock(item.getCurrentStock())
+                .quantity(item.getQuantity())
+                .unitCost(item.getUnitCost())
+                .subtotal(item.getSubtotal())
                 .build();
     }
 }

@@ -496,3 +496,37 @@ export const unitService = {
     return response?.data?.data || [];
   },
 };
+
+// Stock Adjustment Services
+export const stockAdjustmentService = {
+  getAll: async (location = null) => {
+    const url = location ? `/stock-adjustments?location=${location}` : '/stock-adjustments';
+    const response = await api.get(url);
+    return response?.data?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/stock-adjustments/${id}`);
+    return response?.data?.data;
+  },
+
+  create: async (adjustmentData) => {
+    const response = await api.post('/stock-adjustments', adjustmentData);
+    return response?.data;
+  },
+
+  update: async (id, adjustmentData) => {
+    const response = await api.put(`/stock-adjustments/${id}`, adjustmentData);
+    return response?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/stock-adjustments/${id}`);
+    return response?.data;
+  },
+
+  getByLocation: async (location) => {
+    const response = await api.get(`/stock-adjustments?location=${location}`);
+    return response?.data?.data || [];
+  },
+};
