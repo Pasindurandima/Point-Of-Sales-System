@@ -5,7 +5,7 @@ import {
   Users, TrendingUp, Grid, Bell, LogOut, Calendar, Database, 
   FileText, Wallet, RotateCcw, DollarSign, Package
 } from 'lucide-react';
-import { dashboardService, saleService, productService, purchaseService, expenseService } from '../services/apiService';
+import { dashboardService, saleService, productService, purchaseService, expenseService, customerService, supplierService } from '../services/apiService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const Dashboard = () => {
       console.log('Fetching dashboard data from backend...');
       
       // Fetch all data in parallel with better error handling
-      const [sales, products, purchases, expenses] = await Promise.all([
+      const [sales, products, purchases, expenses, customers, suppliers] = await Promise.all([
         saleService.getAll().catch((err) => {
           console.error('Error fetching sales:', err.message);
           return [];
@@ -63,6 +63,14 @@ const Dashboard = () => {
         expenseService.getAll().catch((err) => {
           console.error('Error fetching expenses:', err.message);
           return [];
+        }),
+        customerService.getAll().catch((err) => {
+          console.error('Error fetching customers:', err.message);
+          return [];
+        }),
+        supplierService.getAll().catch((err) => {
+          console.error('Error fetching suppliers:', err.message);
+          return [];
         })
       ]);
 
@@ -70,7 +78,9 @@ const Dashboard = () => {
         sales: sales.length, 
         products: products.length, 
         purchases: purchases.length, 
-        expenses: expenses.length 
+        expenses: expenses.length,
+        customers: customers.length,
+        suppliers: suppliers.length
       });
 
       // Calculate statistics
@@ -89,8 +99,8 @@ const Dashboard = () => {
         totalPurchase,
         totalExpense,
         productCount: products.length,
-        customerCount: 0,
-        supplierCount: 0
+        customerCount: customers.length,
+        supplierCount: suppliers.length
       };
 
       console.log('Calculated statistics:', newStatistics);
@@ -176,6 +186,20 @@ const Dashboard = () => {
       icon: DollarSign, 
       color: 'bg-red-600',
       iconBg: 'bg-red-100'
+    },
+    { 
+      title: 'CUSTOMER COUNT', 
+      value: statistics.customerCount, 
+      icon: Users, 
+      color: 'bg-indigo-600',
+      iconBg: 'bg-indigo-100'
+    },
+    { 
+      title: 'SUPPLIER COUNT', 
+      value: statistics.supplierCount, 
+      icon: Users, 
+      color: 'bg-cyan-600',
+      iconBg: 'bg-cyan-100'
     },
   ];
 
@@ -362,6 +386,85 @@ const Dashboard = () => {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </div>
+
+        {/* Recent Sales Table */}
+        <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-white bg-blue-600 px-4 py-2 rounded-lg">
+              Recent Sales
+            </h3>
+          </div>
+          {recentSales.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No sales data available</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Invoice No
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Total Amount
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Paid Amount
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Payment Status
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Payment Method
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {recentSales.map((sale, index) => (
+                    <tr key={sale.id || index} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {sale.invoiceNumber || `INV-${sale.id}`}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {sale.saleDate ? new Date(sale.saleDate).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {sale.customerName || 'Walk-in Customer'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900">
+                        Rs {(sale.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-600">
+                        Rs {(sale.paidAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          sale.paymentStatus === 'PAID' 
+                            ? 'bg-green-100 text-green-800'
+                            : sale.paymentStatus === 'PARTIAL'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {sale.paymentStatus || 'PENDING'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-gray-600">
+                        {sale.paymentMethod || 'CASH'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

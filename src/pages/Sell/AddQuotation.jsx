@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FileText, Plus, Trash2, Package, User, Calendar, Clock, DollarSign, X, UserPlus, Search } from 'lucide-react';
+import { FileText, Plus, Trash2, Package, User, Calendar, Clock, DollarSign, Search } from 'lucide-react';
 import { quotationService, productService, customerService } from '../../services/apiService';
 
 const AddQuotation = () => {
@@ -12,17 +12,6 @@ const AddQuotation = () => {
   const [customers, setCustomers] = useState([]);
   const [searchProduct, setSearchProduct] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    customerGroup: 'REGULAR'
-  });
 
   const [quotationData, setQuotationData] = useState({
     customer: '',
@@ -157,43 +146,6 @@ const AddQuotation = () => {
       console.log('Selected customer:', customer);
     } else {
       setSelectedCustomer(null);
-    }
-  };
-
-  const handleAddCustomer = async () => {
-    try {
-      if (!newCustomer.name || !newCustomer.phone) {
-        alert('Please fill in customer name and phone number');
-        return;
-      }
-
-      setLoading(true);
-      const response = await customerService.create(newCustomer);
-      console.log('Customer created:', response);
-      
-      alert('Customer added successfully!');
-      await fetchCustomers();
-      
-      if (response.data && response.data.id) {
-        handleCustomerChange(response.data.id.toString());
-      }
-      
-      setShowAddCustomerModal(false);
-      setNewCustomer({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        customerGroup: 'REGULAR'
-      });
-    } catch (err) {
-      console.error('Error creating customer:', err);
-      alert(`Failed to add customer: ${err.response?.data?.message || err.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -359,33 +311,23 @@ const AddQuotation = () => {
               <User className="w-4 h-4 inline mr-1" />
               Customer <span className="text-red-500">*</span>
             </label>
-            <div className="flex gap-2">
-              <select
-                value={quotationData.customer}
-                onChange={(e) => handleCustomerChange(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              >
-                <option value="">Select Customer</option>
-                {customers.length === 0 ? (
-                  <option disabled>Loading customers...</option>
-                ) : (
-                  customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name || `${customer.firstName} ${customer.lastName}`} - {customer.phone}
-                    </option>
-                  ))
-                )}
-              </select>
-              <button
-                type="button"
-                onClick={() => setShowAddCustomerModal(true)}
-                className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center"
-                title="Add New Customer"
-              >
-                <UserPlus className="w-4 h-4" />
-              </button>
-            </div>
+            <select
+              value={quotationData.customer}
+              onChange={(e) => handleCustomerChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              required
+            >
+              <option value="">Select Customer</option>
+              {customers.length === 0 ? (
+                <option disabled>Loading customers...</option>
+              ) : (
+                customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name || `${customer.firstName} ${customer.lastName}`} - {customer.phone}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
 
           <div>
@@ -726,164 +668,6 @@ const AddQuotation = () => {
           </button>
         </div>
       </div>
-
-      {/* Add Customer Modal */}
-      {showAddCustomerModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-teal-600 to-teal-700">
-              <div className="flex items-center space-x-2">
-                <UserPlus className="w-5 h-5 text-white" />
-                <h3 className="text-xl font-semibold text-white">Add New Customer</h3>
-              </div>
-              <button
-                onClick={() => {
-                  setShowAddCustomerModal(false);
-                  setNewCustomer({
-                    name: '',
-                    email: '',
-                    phone: '',
-                    address: '',
-                    city: '',
-                    state: '',
-                    zipCode: '',
-                    customerGroup: 'REGULAR'
-                  });
-                }}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customer Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="Enter customer name"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={newCustomer.phone}
-                    onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="0771234567"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={newCustomer.email}
-                    onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="customer@example.com"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                  <input
-                    type="text"
-                    value={newCustomer.address}
-                    onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="Street address"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input
-                    type="text"
-                    value={newCustomer.city}
-                    onChange={(e) => setNewCustomer({...newCustomer, city: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="City"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
-                  <input
-                    type="text"
-                    value={newCustomer.state}
-                    onChange={(e) => setNewCustomer({...newCustomer, state: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="State"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
-                  <input
-                    type="text"
-                    value={newCustomer.zipCode}
-                    onChange={(e) => setNewCustomer({...newCustomer, zipCode: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="10001"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer Group</label>
-                  <select
-                    value={newCustomer.customerGroup}
-                    onChange={(e) => setNewCustomer({...newCustomer, customerGroup: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="REGULAR">Regular</option>
-                    <option value="VIP">VIP</option>
-                    <option value="WHOLESALE">Wholesale</option>
-                    <option value="RETAIL">Retail</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 px-6 py-4 border-t bg-gray-50">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAddCustomerModal(false);
-                  setNewCustomer({
-                    name: '',
-                    email: '',
-                    phone: '',
-                    address: '',
-                    city: '',
-                    state: '',
-                    zipCode: '',
-                    customerGroup: 'REGULAR'
-                  });
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleAddCustomer}
-                disabled={loading}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center space-x-2 disabled:bg-gray-400"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>{loading ? 'Adding...' : 'Add Customer'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, Smartphone, Building2, Check, X, User, Calendar } from 'lucide-react';
-import { productService } from '../../services/apiService';
+import { productService, customerService } from '../../services/apiService';
 
 const POS = () => {
   const [cart, setCart] = useState([]);
@@ -15,19 +15,13 @@ const POS = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastInvoice, setLastInvoice] = useState(null);
 
-  // Dummy products data (used as a temporary fallback)
-  const dummyProducts = [
-    { id: 1, name: 'Dell Laptop', sku: 'LAP-001', price: 1200.00, stock: 50, image: '💻', taxRate: 18 },
-    { id: 2, name: 'HP Printer', sku: 'PRT-001', price: 350.00, stock: 30, image: '🖨️', taxRate: 18 },
-    { id: 3, name: 'Logitech Mouse', sku: 'MOU-001', price: 25.00, stock: 100, image: '🖱️', taxRate: 18 },
-    { id: 4, name: 'Samsung Monitor', sku: 'MON-001', price: 450.00, stock: 25, image: '🖥️', taxRate: 18 },
-    { id: 5, name: 'Wireless Keyboard', sku: 'KEY-001', price: 75.00, stock: 60, image: '⌨️', taxRate: 18 },
-    { id: 6, name: 'USB Cable', sku: 'CAB-001', price: 10.00, stock: 200, image: '🔌', taxRate: 18 },
-  ];
-
   // Products fetched from backend
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
+
+  // Customers fetched from backend
+  const [customers, setCustomers] = useState([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -53,16 +47,22 @@ const POS = () => {
       }
     };
 
-    fetchProducts();
-  }, []);
+    const fetchCustomers = async () => {
+      try {
+        setCustomersLoading(true);
+        const result = await customerService.getAll();
+        setCustomers(result || []);
+      } catch (error) {
+        console.error('Error fetching customers for POS:', error);
+        setCustomers([]);
+      } finally {
+        setCustomersLoading(false);
+      }
+    };
 
-  // Dummy customers data
-  const dummyCustomers = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', phone: '+1234567890' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '+1234567891' },
-    { id: 3, name: 'Robert Johnson', email: 'robert@example.com', phone: '+1234567892' },
-    { id: 4, name: 'Emily Davis', email: 'emily@example.com', phone: '+1234567893' },
-  ];
+    fetchProducts();
+    fetchCustomers();
+  }, []);
 
   const addToCart = (product) => {
     const existingItem = cart.find(item => item.id === product.id);
@@ -192,10 +192,7 @@ const POS = () => {
     setShowCustomerModal(false);
   };
 
-  // Use fetched products if available, otherwise fall back to dummy products
-  const productList = (products && products.length > 0) ? products : dummyProducts;
-
-  const filteredProducts = productList.filter(product =>
+  const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -434,19 +431,29 @@ const POS = () => {
                 <p className="font-semibold">Walk-in Customer</p>
                 <p className="text-sm text-gray-500">No customer information</p>
               </button>
-              {dummyCustomers.map(customer => (
-                <button
-                  key={customer.id}
-                  onClick={() => selectCustomer(customer)}
-                  className={`w-full p-3 mb-2 border rounded-lg text-left hover:border-teal-500 transition-colors ${
-                    selectedCustomer?.id === customer.id ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
-                  }`}
-                >
-                  <p className="font-semibold">{customer.name}</p>
-                  <p className="text-sm text-gray-600">{customer.email}</p>
-                  <p className="text-sm text-gray-500">{customer.phone}</p>
-                </button>
-              ))}
+              {customersLoading ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">Loading customers...</p>
+                </div>
+              ) : customers.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">No customers found</p>
+                </div>
+              ) : (
+                customers.map(customer => (
+                  <button
+                    key={customer.id}
+                    onClick={() => selectCustomer(customer)}
+                    className={`w-full p-3 mb-2 border rounded-lg text-left hover:border-teal-500 transition-colors ${
+                      selectedCustomer?.id === customer.id ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
+                    }`}
+                  >
+                    <p className="font-semibold">{customer.name}</p>
+                    <p className="text-sm text-gray-600">{customer.email}</p>
+                    <p className="text-sm text-gray-500">{customer.phone}</p>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
