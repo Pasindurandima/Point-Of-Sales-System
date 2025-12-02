@@ -83,14 +83,34 @@ const Dashboard = () => {
         suppliers: suppliers.length
       });
 
-      // Calculate statistics
-      const totalSales = sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
-      const totalPurchase = purchases.reduce((sum, purchase) => sum + (purchase.totalAmount || 0), 0);
-      const totalExpense = expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+      console.log('Sample sale data:', sales[0]);
+
+      // Calculate statistics - backend uses 'total' field, not 'totalAmount'
+      const totalSales = sales.reduce((sum, sale) => {
+        const saleTotal = parseFloat(sale.total || sale.totalAmount || 0);
+        console.log(`Sale ${sale.invoiceNumber}: Rs ${saleTotal}`);
+        return sum + saleTotal;
+      }, 0);
+      
+      console.log(`Total Sales Calculated: Rs ${totalSales}`);
+
+      const totalPurchase = purchases.reduce((sum, purchase) => {
+        return sum + parseFloat(purchase.totalAmount || purchase.total || 0);
+      }, 0);
+      
+      const totalExpense = expenses.reduce((sum, expense) => {
+        return sum + parseFloat(expense.amount || 0);
+      }, 0);
+      
       const netProfit = totalSales - totalPurchase - totalExpense;
+      
       const invoiceDue = sales
         .filter(sale => sale.paymentStatus === 'PENDING' || sale.paymentStatus === 'PARTIAL')
-        .reduce((sum, sale) => sum + ((sale.totalAmount || 0) - (sale.paidAmount || 0)), 0);
+        .reduce((sum, sale) => {
+          const saleTotal = parseFloat(sale.total || sale.totalAmount || 0);
+          const paidAmount = parseFloat(sale.paidAmount || 0);
+          return sum + (saleTotal - paidAmount);
+        }, 0);
 
       const newStatistics = {
         totalSales,
@@ -114,7 +134,8 @@ const Dashboard = () => {
         if (sale.saleDate) {
           const date = new Date(sale.saleDate);
           const monthKey = `${months[date.getMonth()]}-${date.getFullYear()}`;
-          monthlySales[monthKey] = (monthlySales[monthKey] || 0) + (sale.totalAmount || 0);
+          const saleTotal = parseFloat(sale.total || sale.totalAmount || 0);
+          monthlySales[monthKey] = (monthlySales[monthKey] || 0) + saleTotal;
         }
       });
 
@@ -127,10 +148,15 @@ const Dashboard = () => {
 
       setSalesData(updatedSalesData);
 
-      // Get recent sales (last 10)
+      // Get recent sales (last 10) - map to use 'totalAmount' for display consistency
       const sortedSales = [...sales]
         .sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate))
-        .slice(0, 10);
+        .slice(0, 10)
+        .map(sale => ({
+          ...sale,
+          totalAmount: parseFloat(sale.total || sale.totalAmount || 0),
+          paidAmount: parseFloat(sale.paidAmount || 0)
+        }));
       setRecentSales(sortedSales);
 
       console.log('Dashboard data updated successfully');

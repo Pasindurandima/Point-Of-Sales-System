@@ -1,24 +1,29 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.AuthResponse;
-import com.example.demo.dto.LoginRequest;
-import com.example.demo.dto.RegisterRequest;
-import com.example.demo.entity.User;
-import com.example.demo.exception.BadRequestException;
-import com.example.demo.repository.UserRepository;
-import com.example.demo.security.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.dto.AuthResponse;
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.dto.RegisterRequest;
+import com.example.demo.entity.Role;
+import com.example.demo.entity.User;
+import com.example.demo.exception.BadRequestException;
+import com.example.demo.repository.RoleRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.security.JwtTokenProvider;
+
+import lombok.RequiredArgsConstructor;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
@@ -33,6 +38,19 @@ public class AuthService {
             throw new BadRequestException("Email already exists");
         }
 
+        // Get role - either by ID or default to "Staff" role
+        Role role = null;
+        if (request.getRoleId() != null) {
+            role = roleRepository.findById(request.getRoleId())
+                    .orElseThrow(() -> new BadRequestException("Role not found"));
+        } else {
+            // Try to find default "Staff" role, or get any role as fallback
+            role = roleRepository.findByName("Staff")
+                    .or(() -> roleRepository.findByName("User"))
+                    .or(() -> roleRepository.findById(1L))
+                    .orElse(null);
+        }
+
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -41,9 +59,10 @@ public class AuthService {
                 .lastName(request.getLastName())
                 .phone(request.getPhone())
                 .address(request.getAddress())
-                .role(request.getRole() != null ? request.getRole() : User.Role.USER)
+                .role(role)
                 .build();
-
+        
+        user.setIsActive(true);
         user = userRepository.save(user);
 
         String token = tokenProvider.generateToken(user.getUsername());
@@ -53,7 +72,7 @@ public class AuthService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .role(user.getRole().name())
+                .role(user.getRole() != null ? user.getRole().getName() : "No Role")
                 .build();
     }
 
@@ -75,7 +94,7 @@ public class AuthService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .role(user.getRole().name())
+                .role(user.getRole() != null ? user.getRole().getName() : "No Role")
                 .build();
     }
 }

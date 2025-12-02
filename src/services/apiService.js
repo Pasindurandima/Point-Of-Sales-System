@@ -530,3 +530,42 @@ export const stockAdjustmentService = {
     return response?.data?.data || [];
   },
 };
+
+// Role Services
+export const roleService = {
+  getAll: async () => {
+    const response = await api.get('/roles');
+    return response?.data?.data || response?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/roles/${id}`);
+    return response?.data?.data || response?.data;
+  },
+
+  getByName: async (name) => {
+    const response = await api.get(`/roles/name/${name}`);
+    return response?.data?.data || response?.data;
+  },
+
+  create: async (roleData) => {
+    const response = await api.post('/roles', roleData);
+    return response?.data?.data || response?.data;
+  },
+
+  update: async (id, roleData) => {
+    const response = await api.put(`/roles/${id}`, roleData);
+    return response?.data?.data || response?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/roles/${id}`);
+    return response?.data;
+  },
+
+  initializeDefaults: async () => {
+    const response = await api.post('/roles/initialize');
+    return response?.data;
+  },
+};
+

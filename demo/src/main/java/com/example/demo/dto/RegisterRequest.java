@@ -1,7 +1,5 @@
 package com.example.demo.dto;
 
-import com.example.demo.entity.User;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -36,5 +34,5 @@ public class RegisterRequest {
 
     private String phone;
     private String address;
-    private User.Role role;  // Optional role, defaults to USER if not provided
+    private Long roleId;  // Optional role ID, if not provided a default role will be assigned
 }

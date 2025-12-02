@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +10,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "users")
@@ -18,6 +21,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User extends BaseEntity implements UserDetails {
 
     @Column(nullable = false, unique = true)
@@ -39,9 +43,10 @@ public class User extends BaseEntity implements UserDetails {
 
     private String address;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role = Role.USER;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = true)
+    @JsonIgnoreProperties("users")
+    private Role role;
 
     @Override
     public String getUsername() {
@@ -55,7 +60,23 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        
+        // Add role-based authority
+        if (role != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()));
+            
+            // Add permission-based authorities
+            if (role.getPermissions() != null) {
+                authorities.addAll(
+                    role.getPermissions().stream()
+                        .map(permission -> new SimpleGrantedAuthority("PERMISSION_" + permission.toUpperCase()))
+                        .collect(Collectors.toList())
+                );
+            }
+        }
+        
+        return authorities;
     }
 
     @Override
@@ -76,9 +97,5 @@ public class User extends BaseEntity implements UserDetails {
     @Override
     public boolean isEnabled() {
         return this.getIsActive() != null && this.getIsActive();
-    }
-
-    public enum Role {
-        ADMIN, MANAGER, USER
     }
 }
