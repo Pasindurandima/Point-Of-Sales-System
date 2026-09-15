@@ -38,14 +38,9 @@ api.interceptors.response.use(
     if (error.response) {
       // Handle specific error codes
       if (error.response.status === 401) {
-        // Unauthorized - Only redirect if we're not on login page
+        // Keep the local session intact so a failed page request does not
+        // make the permission-based navigation disappear.
         console.warn('Unauthorized access - Authentication required');
-        const currentPath = window.location.pathname;
-        if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
-          // Don't auto-redirect, let the component handle it
-        }
       } else if (error.response.status === 403) {
         console.error('Access forbidden:', error.response.data);
       } else if (error.response.status === 404) {

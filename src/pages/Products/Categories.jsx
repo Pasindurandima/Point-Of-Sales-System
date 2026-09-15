@@ -29,8 +29,8 @@ const Categories = () => {
       const response = await categoryService.getAll();
       console.log('Categories API Response:', response);
       
-      // Backend returns { success: true, message: "...", data: [...] }
-      const categoriesData = response.data || [];
+      // categoryService already unwraps the API response to an array.
+      const categoriesData = Array.isArray(response) ? response : response?.data || [];
       console.log('Categories array to display:', categoriesData);
       console.log('Number of categories:', categoriesData.length);
       

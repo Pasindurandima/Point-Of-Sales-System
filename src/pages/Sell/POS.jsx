@@ -295,9 +295,9 @@ const POS = () => {
         </div>
       </div>
       
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 overflow-hidden">
-        {/* Product Selection - Left Side */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 overflow-hidden min-h-0">
+        {/* Product Search + Billing List - Left Side */}
+        <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col overflow-hidden min-h-0">
           <div className="mb-3 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
@@ -309,35 +309,102 @@ const POS = () => {
                 className="w-full pl-10 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
+
+            {searchQuery.trim() && (
+              <div className="mt-3 border border-gray-200 rounded-lg bg-gray-50 overflow-hidden">
+                {filteredProducts.length > 0 ? (
+                  <div className="max-h-48 overflow-y-auto">
+                    {filteredProducts.slice(0, 8).map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => {
+                          addToCart(product);
+                          setSearchQuery('');
+                        }}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-white border-b border-gray-200 last:border-b-0"
+                      >
+                        <div>
+                          <div className="font-medium text-gray-800 text-sm">{product.name}</div>
+                          <div className="text-xs text-gray-500">{product.sku}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-semibold text-teal-600">Rs {product.price.toFixed(2)}</div>
+                          <div className="text-[11px] text-gray-500">Stock {product.stock}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-3 py-3 text-sm text-gray-500">No matching products found.</div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {filteredProducts.map(product => (
-                <div 
-                  key={product.id}
-                  onClick={() => addToCart(product)}
-                  className="border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-teal-500 transition-all cursor-pointer"
-                >
-                  <div className="text-center">
-                    <div className="w-full h-24 bg-gradient-to-br from-teal-50 to-blue-50 rounded mb-2 flex items-center justify-center text-4xl">
-                      {product.image}
+            {cart.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 border border-dashed border-gray-300 rounded-xl">
+                <ShoppingCart className="w-12 h-12 mb-3" />
+                <p className="text-lg font-medium">Billing list is empty</p>
+                <p className="text-sm">Use the search bar to add products</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {cart.map((item) => (
+                  <div key={item.id} className="border border-gray-200 rounded-xl p-3 bg-gray-50">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-800 truncate">{item.name}</div>
+                        <div className="text-xs text-gray-500">{item.sku}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <h3 className="font-semibold text-xs mb-1">{product.name}</h3>
-                    <p className="text-xs text-gray-500 mb-1">{product.sku}</p>
-                    <p className="text-teal-600 font-bold text-sm">Rs {product.price.toFixed(2)}</p>
-                    <p className={`text-xs mt-1 ${product.stock > 20 ? 'text-green-600' : 'text-orange-600'}`}>
-                      Stock: {product.stock}
-                    </p>
+
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="w-8 h-8 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center justify-center"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="min-w-8 text-center font-semibold">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="w-8 h-8 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center justify-center"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-xs text-gray-500">Unit price</div>
+                        <div className="text-sm font-semibold text-teal-600">Rs {item.price.toFixed(2)}</div>
+                      </div>
+
+                      <div className="text-right min-w-[80px]">
+                        <div className="text-xs text-gray-500">Line total</div>
+                        <div className="text-sm font-bold text-gray-800">Rs {(item.price * item.quantity).toFixed(2)}</div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Cart - Right Side */}
-        <div className="bg-white rounded-lg shadow-md p-4 flex flex-col">
+        <div className="bg-white rounded-lg shadow-md p-4 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <h2 className="text-lg font-semibold">Current Sale</h2>
             <ShoppingCart className="w-5 h-5 text-teal-600" />
@@ -364,7 +431,7 @@ const POS = () => {
             )}
           </div>
 
-          {/* Cart Items */}
+          {/* Compact cart summary */}
           <div className="flex-1 border-t border-b py-4 mb-4 overflow-y-auto min-h-0">
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
@@ -374,43 +441,13 @@ const POS = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {cart.map(item => (
-                  <div key={item.id} className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-sm">{item.name}</h4>
-                        <p className="text-xs text-gray-500">{item.sku}</p>
-                        <p className="text-sm text-teal-600 mt-1">Rs {item.price.toFixed(2)} each</p>
-                      </div>
-                      <button
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 p-1 rounded"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="font-semibold w-8 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 p-1 rounded"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <p className="font-bold text-teal-600">
-                        Rs {(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
+                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <div className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Selected Products</div>
+                  <div className="mt-2 text-lg font-bold text-gray-800">{cart.length} items</div>
+                  <div className="mt-3 text-sm text-gray-600 leading-6">
+                    {cart.map((item) => `${item.name} x${item.quantity}`).join(', ')}
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </div>

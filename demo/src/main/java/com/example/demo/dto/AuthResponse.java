@@ -1,5 +1,7 @@
 package com.example.demo.dto;
 
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,4 +18,5 @@ public class AuthResponse {
     private String username;
     private String email;
     private String role;
+    private Set<String> permissions;
 }

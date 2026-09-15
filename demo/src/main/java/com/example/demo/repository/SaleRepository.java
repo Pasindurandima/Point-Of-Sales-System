@@ -14,6 +14,8 @@ import com.example.demo.entity.Sale;
 
 @Repository
 public interface SaleRepository extends JpaRepository<Sale, Long> {
+
+    long countByUserId(Long userId);
     
     Optional<Sale> findByInvoiceNumber(String invoiceNumber);
     

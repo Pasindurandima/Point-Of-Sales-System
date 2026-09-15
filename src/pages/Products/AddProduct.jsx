@@ -38,7 +38,8 @@ const AddProduct = () => {
   const fetchCategories = async () => {
     try {
       const data = await categoryService.getAll();
-      setCategories(data || []);
+      const list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+      setCategories(list);
     } catch (error) {
       console.error('Error fetching categories:', error);
       setCategories([]);
@@ -48,7 +49,8 @@ const AddProduct = () => {
   const fetchBrands = async () => {
     try {
       const data = await brandService.getAll();
-      setBrands(data || []);
+      const list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+      setBrands(list);
     } catch (error) {
       console.error('Error fetching brands:', error);
       setBrands([]);
@@ -268,9 +270,10 @@ const AddProduct = () => {
                   value={formData.categoryId}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  disabled={!Array.isArray(categories) || categories.length === 0}
                 >
-                  <option value="">Select Category</option>
-                  {categories.map(cat => (
+                  <option value="">{Array.isArray(categories) && categories.length > 0 ? 'Select Category' : 'No categories available'}</option>
+                  {Array.isArray(categories) && categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
@@ -283,9 +286,10 @@ const AddProduct = () => {
                   value={formData.brandId}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  disabled={!Array.isArray(brands) || brands.length === 0}
                 >
-                  <option value="">Select Brand</option>
-                  {brands.map(brand => (
+                  <option value="">{Array.isArray(brands) && brands.length > 0 ? 'Select Brand' : 'No brands available'}</option>
+                  {Array.isArray(brands) && brands.map(brand => (
                     <option key={brand.id} value={brand.id}>{brand.name}</option>
                   ))}
                 </select>

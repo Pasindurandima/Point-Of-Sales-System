@@ -9,12 +9,13 @@ export const authService = {
     if (data && data.token) {
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify({
-        userId: data.userId,
+        userId: data.id || data.userId,
         username: data.username,
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: data.role
+        role: data.role || data.roleName,
+        permissions: data.permissions || []
       }));
     }
     return response.data;
@@ -33,6 +34,34 @@ export const authService = {
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
+  },
+};
+
+// User Management Services
+export const userService = {
+  getAll: async () => {
+    const response = await api.get('/users');
+    return response?.data?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/users/${id}`);
+    return response?.data?.data || response?.data;
+  },
+
+  create: async (userData) => {
+    const response = await api.post('/users', userData);
+    return response?.data?.data || response?.data;
+  },
+
+  update: async (id, userData) => {
+    const response = await api.put(`/users/${id}`, userData);
+    return response?.data?.data || response?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/users/${id}`);
+    return response?.data;
   },
 };
 
@@ -274,9 +303,11 @@ export const purchaseService = {
 export const categoryService = {
   getAll: async () => {
     const response = await api.get('/categories');
-    console.log('categoryService.getAll - Raw response:', response);
-    console.log('categoryService.getAll - response.data:', response.data);
-    return response.data; // Return response.data (ApiResponse object)
+    const data = response?.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
   },
 
   getById: async (id) => {
@@ -306,12 +337,11 @@ export const categoryService = {
 export const brandService = {
   getAll: async () => {
     const response = await api.get('/brands');
-    console.log('brandService.getAll - Raw response:', response);
-    console.log('brandService.getAll - response.data:', response.data);
-    console.log('brandService.getAll - response.data.data:', response.data.data);
-    // Backend returns: { success: true, message: "...", data: [...] }
-    // So we need response.data.data to get the actual brands array
-    return response.data;
+    const data = response?.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
   },
 
   getById: async (id) => {
@@ -569,3 +599,16 @@ export const roleService = {
   },
 };
 
+// Report Services
+export const reportService = {
+  getProfitLossReport: async (startDate, endDate) => {
+    let url = '/reports/profit-loss';
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (params.toString()) url += `?${params.toString()}`;
+    
+    const response = await api.get(url);
+    return response?.data?.data || {};
+  },
+};

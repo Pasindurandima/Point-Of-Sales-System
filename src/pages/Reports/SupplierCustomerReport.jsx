@@ -1,26 +1,71 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { customerService, purchaseService, saleService, supplierService } from '../../services/apiService';
+import { formatCurrency } from './reportUtils';
 
 const SupplierCustomerReport = () => {
+  const [sales, setSales] = useState([]);
+  const [purchases, setPurchases] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [saleData, purchaseData, customerData, supplierData] = await Promise.all([
+          saleService.getAll(),
+          purchaseService.getAll(),
+          customerService.getAll(),
+          supplierService.getAll(),
+        ]);
+
+        setSales(saleData || []);
+        setPurchases(purchaseData || []);
+        setCustomers(customerData || []);
+        setSuppliers(supplierData || []);
+      } catch (error) {
+        console.error('Failed to load supplier/customer report:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const supplierSummary = useMemo(() => {
+    const map = new Map();
+    purchases.forEach((purchase) => {
+      const supplier = purchase?.supplier?.name || 'Unassigned Supplier';
+      const current = map.get(supplier) || { name: supplier, purchases: 0, due: 0 };
+      current.purchases += Number(purchase?.total || 0);
+      current.due += Number(purchase?.paymentDue || 0);
+      map.set(supplier, current);
+    });
+    return Array.from(map.values()).sort((a, b) => b.purchases - a.purchases).slice(0, 5);
+  }, [purchases]);
+
+  const customerSummary = useMemo(() => {
+    const map = new Map();
+    sales.forEach((sale) => {
+      const customer = sale?.customer?.name || 'Walk-in Customer';
+      const current = map.get(customer) || { name: customer, sales: 0, due: 0 };
+      current.sales += Number(sale?.total || 0);
+      current.due += Math.max(Number(sale?.total || 0) - Number(sale?.paidAmount || 0), 0);
+      map.set(customer, current);
+    });
+    return Array.from(map.values()).sort((a, b) => b.sales - a.sales).slice(0, 5);
+  }, [sales]);
+
+  if (loading) {
+    return <div className="p-6 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div></div>;
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Supplier & Customer Report</h1>
-        <p className="text-gray-600 mt-2">Analysis of supplier and customer transactions</p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>View Both</option>
-              <option>Suppliers Only</option>
-              <option>Customers Only</option>
-            </select>
-            <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-          </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">Export Report</button>
-        </div>
+        <p className="text-gray-600 mt-2">Live transaction balances for suppliers and customers.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -31,43 +76,18 @@ const SupplierCustomerReport = () => {
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Supplier Name</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Purchases</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Due Amount</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Due</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              <tr>
-                <td className="px-4 py-3 text-sm">ABC Suppliers</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$85,000</td>
-                <td className="px-4 py-3 text-sm text-right text-red-600">$12,500</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">XYZ Wholesale</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$72,000</td>
-                <td className="px-4 py-3 text-sm text-right text-red-600">$8,200</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Global Trade</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$65,000</td>
-                <td className="px-4 py-3 text-sm text-right text-green-600">$0</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Prime Distributors</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$48,000</td>
-                <td className="px-4 py-3 text-sm text-right text-red-600">$5,800</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Import Co</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$35,000</td>
-                <td className="px-4 py-3 text-sm text-right text-green-600">$0</td>
-              </tr>
+              {supplierSummary.map((row) => (
+                <tr key={row.name}>
+                  <td className="px-4 py-3 text-sm">{row.name}</td>
+                  <td className="px-4 py-3 text-sm text-right font-medium">{formatCurrency(row.purchases)}</td>
+                  <td className="px-4 py-3 text-sm text-right text-red-600">{formatCurrency(row.due)}</td>
+                </tr>
+              ))}
             </tbody>
-            <tfoot className="bg-gray-50">
-              <tr>
-                <td className="px-4 py-3 text-sm font-bold">Total</td>
-                <td className="px-4 py-3 text-sm text-right font-bold text-teal-600">$305,000</td>
-                <td className="px-4 py-3 text-sm text-right font-bold text-red-600">$26,500</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
 
@@ -78,43 +98,18 @@ const SupplierCustomerReport = () => {
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Customer Name</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Sales</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Due Amount</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Due</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              <tr>
-                <td className="px-4 py-3 text-sm">Retail Chain A</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$125,000</td>
-                <td className="px-4 py-3 text-sm text-right text-red-600">$18,500</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Corporate Client B</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$98,000</td>
-                <td className="px-4 py-3 text-sm text-right text-red-600">$15,000</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Walk-in Customers</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$85,000</td>
-                <td className="px-4 py-3 text-sm text-right text-green-600">$0</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Premium Customer C</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$67,000</td>
-                <td className="px-4 py-3 text-sm text-right text-red-600">$8,200</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Distributor D</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">$54,000</td>
-                <td className="px-4 py-3 text-sm text-right text-green-600">$0</td>
-              </tr>
+              {customerSummary.map((row) => (
+                <tr key={row.name}>
+                  <td className="px-4 py-3 text-sm">{row.name}</td>
+                  <td className="px-4 py-3 text-sm text-right font-medium">{formatCurrency(row.sales)}</td>
+                  <td className="px-4 py-3 text-sm text-right text-red-600">{formatCurrency(row.due)}</td>
+                </tr>
+              ))}
             </tbody>
-            <tfoot className="bg-gray-50">
-              <tr>
-                <td className="px-4 py-3 text-sm font-bold">Total</td>
-                <td className="px-4 py-3 text-sm text-right font-bold text-teal-600">$429,000</td>
-                <td className="px-4 py-3 text-sm text-right font-bold text-red-600">$41,700</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </div>

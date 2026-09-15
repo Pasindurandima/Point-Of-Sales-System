@@ -14,6 +14,8 @@ import com.example.demo.entity.Purchase;
 
 @Repository
 public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
+
+    long countByUserId(Long userId);
     
     Optional<Purchase> findByPurchaseNumber(String purchaseNumber);
     

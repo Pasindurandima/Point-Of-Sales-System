@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, User, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { authService } from '../services/apiService';
+import { getFirstAccessiblePath } from '../utils/permissions';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -47,8 +48,7 @@ const SignIn = () => {
 
       console.log('Login successful:', response);
       
-      // Navigate to dashboard on successful login
-      navigate('/');
+      navigate(getFirstAccessiblePath(JSON.parse(localStorage.getItem('user') || 'null')));
       
     } catch (err) {
       console.error('Login error:', err);

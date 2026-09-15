@@ -6,6 +6,7 @@ import {
   FaWallet, FaCreditCard, FaChartBar, FaBell, FaCog, FaUserTie,
   FaLightbulb, FaUserCircle, FaSignOutAlt, FaAngleRight
 } from 'react-icons/fa';
+import { hasPermission, permissionForPath } from '../../utils/permissions';
 
 const menuItems = [
   { name: 'Home', path: '/', icon: FaHome },
@@ -176,6 +177,20 @@ const menuItems = [
 
 export default function Sidebar() {
   const [expandedMenus, setExpandedMenus] = useState({});
+  const visibleMenuItems = menuItems
+    .map((item) => ({
+      ...item,
+      submenu: item.submenu?.filter((sub) => {
+        const permission = permissionForPath(sub.path);
+        return !permission || hasPermission(permission);
+      })
+    }))
+    .filter((item) => {
+      const permission = permissionForPath(item.path);
+      return !item.hasSubmenu
+        ? !permission || hasPermission(permission)
+        : item.submenu?.length > 0 || !permission || hasPermission(permission);
+    });
 
   const toggleSubmenu = (menuName) => {
     setExpandedMenus(prev => ({
@@ -185,11 +200,11 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-54 bg-emerald-800 text-white min-h-screen p-4">
+    <aside className="w-54 bg-emerald-800 text-white h-screen p-4 overflow-y-auto flex-shrink-0">
       <div className="text-xl font-bold mb-6">SecU Engineering</div>
 
-      <nav className="flex flex-col space-y-1">
-        {menuItems.map((m) => (
+      <nav className="flex flex-col space-y-1 pb-6">
+        {visibleMenuItems.map((m) => (
           <div key={m.path}>
             {m.hasSubmenu ? (
               <div>

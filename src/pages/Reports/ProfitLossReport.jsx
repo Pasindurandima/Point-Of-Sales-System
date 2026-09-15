@@ -1,15 +1,72 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { reportService } from '../../services/apiService';
 
 const ProfitLossReport = () => {
-  const monthlyData = [
-    { month: 'Jan', revenue: 45000, expenses: 28000, profit: 17000 },
-    { month: 'Feb', revenue: 52000, expenses: 31000, profit: 21000 },
-    { month: 'Mar', revenue: 48000, expenses: 29000, profit: 19000 },
-    { month: 'Apr', revenue: 61000, expenses: 35000, profit: 26000 },
-    { month: 'May', revenue: 55000, expenses: 32000, profit: 23000 },
-    { month: 'Jun', revenue: 67000, expenses: 38000, profit: 29000 },
-  ];
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [startDate, setStartDate] = useState(new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+
+  useEffect(() => {
+    fetchReport();
+  }, []);
+
+  const fetchReport = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await reportService.getProfitLossReport(
+        `${startDate}T00:00:00`,
+        `${endDate}T23:59:59`
+      );
+      setReportData(data);
+    } catch (err) {
+      console.error('Error fetching profit/loss report:', err);
+      setError('Failed to load report data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExport = () => {
+    const content = `PROFIT & LOSS REPORT\n\nPeriod: ${startDate} to ${endDate}\n\nREVENUE\nTotal Revenue: $${parseFloat(reportData.totalRevenue).toFixed(2)}\n\nCOST OF GOODS SOLD\nTotal COGS: $${parseFloat(reportData.totalCOGS).toFixed(2)}\n\nGross Profit: $${parseFloat(reportData.grossProfit).toFixed(2)}\n\nOPERATING EXPENSES\nTotal Operating Expenses: $${parseFloat(reportData.totalOperatingExpenses).toFixed(2)}\n\nNET PROFIT: $${parseFloat(reportData.netProfit).toFixed(2)}\nProfit Margin: ${reportData.profitMargin.toFixed(2)}%`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `profit-loss-report-${new Date().getTime()}.txt`;
+    a.click();
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!reportData) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+          No data available
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -21,16 +78,30 @@ const ProfitLossReport = () => {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <div className="flex gap-2">
-            <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>All Locations</option>
-              <option>Main Office</option>
-              <option>Branch Store</option>
-            </select>
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" 
+            />
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" 
+            />
+            <button 
+              onClick={fetchReport}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Filter
+            </button>
           </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
-            Export PDF
+          <button 
+            onClick={handleExport}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Export Report
           </button>
         </div>
       </div>
@@ -38,29 +109,29 @@ const ProfitLossReport = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-md">
           <div className="text-sm opacity-90 mb-2">Total Revenue</div>
-          <div className="text-3xl font-bold">$328,000</div>
-          <div className="text-xs opacity-75 mt-2">↑ 12% from last period</div>
+          <div className="text-3xl font-bold">${parseFloat(reportData.totalRevenue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          <div className="text-xs opacity-75 mt-2">From sales</div>
         </div>
         <div className="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-lg shadow-md">
           <div className="text-sm opacity-90 mb-2">Total Expenses</div>
-          <div className="text-3xl font-bold">$193,000</div>
-          <div className="text-xs opacity-75 mt-2">↑ 8% from last period</div>
+          <div className="text-3xl font-bold">${parseFloat(reportData.totalCOGS + reportData.totalOperatingExpenses).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          <div className="text-xs opacity-75 mt-2">COGS + Operating</div>
         </div>
         <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-md">
           <div className="text-sm opacity-90 mb-2">Net Profit</div>
-          <div className="text-3xl font-bold">$135,000</div>
-          <div className="text-xs opacity-75 mt-2">↑ 18% from last period</div>
+          <div className="text-3xl font-bold">${parseFloat(reportData.netProfit).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          <div className="text-xs opacity-75 mt-2">Margin: {reportData.profitMargin.toFixed(2)}%</div>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Profit Trend</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={monthlyData}>
+          <LineChart data={reportData.monthlyData || []}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
-            <Tooltip />
+            <Tooltip formatter={(value) => `$${parseFloat(value).toFixed(2)}`} />
             <Legend />
             <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} name="Revenue" />
             <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} name="Expenses" />
@@ -75,37 +146,39 @@ const ProfitLossReport = () => {
           <div>
             <h3 className="font-semibold text-teal-600 mb-2">REVENUE</h3>
             <div className="ml-4 space-y-1">
-              <div className="flex justify-between text-sm"><span>Sales Revenue</span><span className="font-medium">$310,000</span></div>
-              <div className="flex justify-between text-sm"><span>Service Revenue</span><span className="font-medium">$18,000</span></div>
-              <div className="flex justify-between font-semibold border-t pt-2"><span>Total Revenue</span><span className="text-blue-600">$328,000</span></div>
+              <div className="flex justify-between text-sm"><span>Sales Revenue</span><span className="font-medium">${parseFloat(reportData.totalRevenue).toFixed(2)}</span></div>
+              <div className="flex justify-between font-semibold border-t pt-2"><span>Total Revenue</span><span className="text-blue-600">${parseFloat(reportData.totalRevenue).toFixed(2)}</span></div>
             </div>
           </div>
           <div>
             <h3 className="font-semibold text-teal-600 mb-2">COST OF GOODS SOLD</h3>
             <div className="ml-4 space-y-1">
-              <div className="flex justify-between text-sm"><span>Opening Stock</span><span className="font-medium">$85,000</span></div>
-              <div className="flex justify-between text-sm"><span>Purchases</span><span className="font-medium">$145,000</span></div>
-              <div className="flex justify-between text-sm"><span>Less: Closing Stock</span><span className="font-medium text-red-600">($95,000)</span></div>
-              <div className="flex justify-between font-semibold border-t pt-2"><span>Total COGS</span><span className="text-red-600">$135,000</span></div>
+              <div className="flex justify-between text-sm"><span>Total Purchases</span><span className="font-medium">${parseFloat(reportData.totalCOGS).toFixed(2)}</span></div>
+              <div className="flex justify-between font-semibold border-t pt-2"><span>Total COGS</span><span className="text-red-600">${parseFloat(reportData.totalCOGS).toFixed(2)}</span></div>
             </div>
           </div>
           <div className="bg-blue-50 p-3 rounded">
-            <div className="flex justify-between font-bold"><span>GROSS PROFIT</span><span className="text-blue-600">$193,000</span></div>
+            <div className="flex justify-between font-bold"><span>GROSS PROFIT</span><span className="text-blue-600">${parseFloat(reportData.grossProfit).toFixed(2)}</span></div>
           </div>
           <div>
             <h3 className="font-semibold text-teal-600 mb-2">OPERATING EXPENSES</h3>
             <div className="ml-4 space-y-1">
-              <div className="flex justify-between text-sm"><span>Salaries & Wages</span><span className="font-medium">$35,000</span></div>
-              <div className="flex justify-between text-sm"><span>Rent</span><span className="font-medium">$12,000</span></div>
-              <div className="flex justify-between text-sm"><span>Utilities</span><span className="font-medium">$4,500</span></div>
-              <div className="flex justify-between text-sm"><span>Marketing</span><span className="font-medium">$3,500</span></div>
-              <div className="flex justify-between text-sm"><span>Other Expenses</span><span className="font-medium">$3,000</span></div>
-              <div className="flex justify-between font-semibold border-t pt-2"><span>Total Operating Expenses</span><span className="text-red-600">$58,000</span></div>
+              {reportData.expenseBreakdown && Object.keys(reportData.expenseBreakdown).length > 0 ? (
+                Object.entries(reportData.expenseBreakdown).map(([category, amount]) => (
+                  <div key={category} className="flex justify-between text-sm">
+                    <span>{category.charAt(0) + category.slice(1).toLowerCase()}</span>
+                    <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-gray-500">No expense breakdown available</div>
+              )}
+              <div className="flex justify-between font-semibold border-t pt-2"><span>Total Operating Expenses</span><span className="text-red-600">${parseFloat(reportData.totalOperatingExpenses).toFixed(2)}</span></div>
             </div>
           </div>
           <div className="bg-green-50 p-4 rounded">
-            <div className="flex justify-between text-lg font-bold"><span>NET PROFIT</span><span className="text-green-600">$135,000</span></div>
-            <div className="text-sm text-gray-600 mt-1">Profit Margin: 41.2%</div>
+            <div className="flex justify-between text-lg font-bold"><span>NET PROFIT</span><span className={`${parseFloat(reportData.netProfit) >= 0 ? 'text-green-600' : 'text-red-600'}`}>${parseFloat(reportData.netProfit).toFixed(2)}</span></div>
+            <div className="text-sm text-gray-600 mt-1">Profit Margin: {reportData.profitMargin.toFixed(2)}%</div>
           </div>
         </div>
       </div>

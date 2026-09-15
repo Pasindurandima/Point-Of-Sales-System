@@ -2,6 +2,7 @@ package com.example.demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -37,7 +38,21 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configure(http))
                 .authorizeHttpRequests(auth -> auth
-                       .requestMatchers("/auth/**", "/public/**", "/adding-users/**", "/sales/**", "/customers/**", "/products/**", "/api/roles/initialize").permitAll()
+                      .requestMatchers("/auth/**", "/public/**", "/adding-users/**", "/roles/initialize").permitAll()
+                      .requestMatchers("/roles/**").hasAuthority("PERMISSION_ROLES")
+                      .requestMatchers("/users/**").hasAuthority("PERMISSION_USERS")
+                      .requestMatchers(HttpMethod.GET, "/products/**").hasAnyAuthority("PERMISSION_PRODUCTS", "PERMISSION_SALES")
+                      .requestMatchers("/products/**").hasAuthority("PERMISSION_PRODUCTS")
+                      .requestMatchers("/categories/**").hasAuthority("PERMISSION_CATEGORIES")
+                      .requestMatchers("/brands/**").hasAuthority("PERMISSION_BRANDS")
+                      .requestMatchers("/units/**").hasAuthority("PERMISSION_UNITS")
+                      .requestMatchers(HttpMethod.GET, "/customers/**").hasAnyAuthority("PERMISSION_CUSTOMERS", "PERMISSION_SALES")
+                      .requestMatchers("/customers/**").hasAuthority("PERMISSION_CUSTOMERS")
+                      .requestMatchers("/suppliers/**").hasAuthority("PERMISSION_SUPPLIERS")
+                      .requestMatchers("/sales/**").hasAuthority("PERMISSION_SALES")
+                      .requestMatchers("/purchases/**").hasAuthority("PERMISSION_PURCHASES")
+                      .requestMatchers("/expenses/**").hasAuthority("PERMISSION_EXPENSES")
+                      .requestMatchers("/reports/**").hasAuthority("PERMISSION_REPORTS")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

@@ -32,7 +32,13 @@ public class RegisterRequest {
     @NotBlank(message = "Last name is required")
     private String lastName;
 
+    private String prefix;
     private String phone;
     private String address;
+    private Boolean isActive;
+    private Boolean enableServiceStaffPin;
+    private Boolean allowLogin;
+    private Boolean accessAllLocations;
     private Long roleId;  // Optional role ID, if not provided a default role will be assigned
+    private String roleName;
 }

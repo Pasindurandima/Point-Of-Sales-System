@@ -1,5 +1,11 @@
 package com.example.demo.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.demo.dto.CategoryRequest;
 import com.example.demo.dto.CategoryResponse;
 import com.example.demo.entity.Category;
@@ -7,12 +13,8 @@ import com.example.demo.exception.BadRequestException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.CategoryRepository;
 import com.example.demo.util.DtoMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class CategoryService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .build();
+        category.setIsActive(true);
 
         Category savedCategory = categoryRepository.save(category);
         return dtoMapper.toCategoryResponse(savedCategory);
@@ -58,8 +61,10 @@ public class CategoryService {
         return dtoMapper.toCategoryResponse(category);
     }
 
+    @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll().stream()
+                .filter(category -> Boolean.TRUE.equals(category.getIsActive()))
                 .map(dtoMapper::toCategoryResponse)
                 .collect(Collectors.toList());
     }

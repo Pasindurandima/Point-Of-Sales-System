@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, FileText, Barcode, Package, Search, X } from 'lucide-react';
+import JsBarcode from 'jsbarcode';
 import { productService } from '../../services/apiService';
 
 const PrintLabel = () => {
@@ -81,6 +82,19 @@ const PrintLabel = () => {
     }));
   };
 
+  const renderBarcodes = (printWindow) => {
+    const barcodeValue = selectedProduct.barcode || selectedProduct.sku || 'N/A';
+    printWindow.document.querySelectorAll('.product-barcode').forEach((barcode) => {
+      JsBarcode(barcode, barcodeValue, {
+        format: 'CODE128',
+        displayValue: false,
+        height: 30,
+        width: 1.5,
+        margin: 0
+      });
+    });
+  };
+
   const generateLabelHTML = () => {
     if (!selectedProduct) {
       alert('Please select a product first');
@@ -112,18 +126,7 @@ const PrintLabel = () => {
           ${includePrice ? `<div style="font-size: 14px; font-weight: bold; color: #0d9488; margin-bottom: 4px;">Rs ${(selectedProduct.sellingPrice || 0).toFixed(2)}</div>` : ''}
           ${includeBarcode ? `
             <div style="margin-top: 4px;">
-              <svg width="100" height="30">
-                <rect width="2" height="30" x="5" fill="black"/>
-                <rect width="1" height="30" x="8" fill="black"/>
-                <rect width="3" height="30" x="10" fill="black"/>
-                <rect width="1" height="30" x="14" fill="black"/>
-                <rect width="2" height="30" x="16" fill="black"/>
-                <rect width="1" height="30" x="19" fill="black"/>
-                <rect width="2" height="30" x="21" fill="black"/>
-                <rect width="3" height="30" x="24" fill="black"/>
-                <rect width="1" height="30" x="28" fill="black"/>
-                <rect width="2" height="30" x="30" fill="black"/>
-              </svg>
+              <svg class="product-barcode" width="100" height="30"></svg>
               <div style="font-size: 8px; margin-top: 2px;">${selectedProduct.sku || selectedProduct.barcode || 'N/A'}</div>
             </div>
           ` : ''}
@@ -185,6 +188,7 @@ const PrintLabel = () => {
       </html>
     `);
     printWindow.document.close();
+    renderBarcodes(printWindow);
   };
 
   const handlePrint = () => {
@@ -234,6 +238,7 @@ const PrintLabel = () => {
       </html>
     `);
     printWindow.document.close();
+    renderBarcodes(printWindow);
   };
 
   return (

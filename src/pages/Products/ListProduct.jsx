@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { productService } from '../../services/apiService';
+import { categoryService, productService } from '../../services/apiService';
 
 const ListProduct = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const categoriesArray = await categoryService.getAll();
+      setCategories(Array.isArray(categoriesArray) ? categoriesArray : []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -46,7 +58,7 @@ const ListProduct = () => {
   const filteredProducts = (products || []).filter(product => {
     const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || product.categoryId?.toString() === selectedCategory;
+    const matchesCategory = !selectedCategory || product.category?.id?.toString() === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -73,7 +85,11 @@ const ListProduct = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="">All Categories</option>
-              {/* Categories will be loaded from backend */}
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
           </div>
           <button 
@@ -116,7 +132,7 @@ const ListProduct = () => {
                     <tr key={product.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.sku}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{product.categoryName || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{product.category?.name || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Rs {(product.sellingPrice || 0).toFixed(2)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{product.quantity || 0}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

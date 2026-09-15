@@ -11,6 +11,8 @@ import java.util.Optional;
 
 @Repository
 public interface StockAdjustmentRepository extends JpaRepository<StockAdjustment, Long> {
+
+    long countByUserId(Long userId);
     
     Optional<StockAdjustment> findByReferenceNumber(String referenceNumber);
     

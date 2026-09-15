@@ -30,6 +30,15 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+                return register(request, true);
+        }
+
+        @Transactional
+        public AuthResponse registerPublic(RegisterRequest request) {
+                return register(request, false);
+        }
+
+        private AuthResponse register(RegisterRequest request, boolean allowRequestedRole) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new BadRequestException("Username already exists");
         }
@@ -40,8 +49,11 @@ public class AuthService {
 
         // Get role - either by ID or default to "Staff" role
         Role role = null;
-        if (request.getRoleId() != null) {
+        if (allowRequestedRole && request.getRoleId() != null) {
             role = roleRepository.findById(request.getRoleId())
+                    .orElseThrow(() -> new BadRequestException("Role not found"));
+        } else if (allowRequestedRole && request.getRoleName() != null && !request.getRoleName().isBlank()) {
+            role = roleRepository.findByNameIgnoreCase(request.getRoleName().trim())
                     .orElseThrow(() -> new BadRequestException("Role not found"));
         } else {
             // Try to find default "Staff" role, or get any role as fallback
@@ -57,12 +69,17 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
+                .prefix(request.getPrefix())
                 .phone(request.getPhone())
                 .address(request.getAddress())
+                .enableServiceStaffPin(Boolean.TRUE.equals(request.getEnableServiceStaffPin()))
+                .allowLogin(request.getAllowLogin() == null || request.getAllowLogin())
+                .accessAllLocations(request.getAccessAllLocations() == null || request.getAccessAllLocations())
+                .roleName(role != null ? role.getName() : null)
                 .role(role)
                 .build();
         
-        user.setIsActive(true);
+        user.setIsActive(request.getIsActive() == null || request.getIsActive());
         user = userRepository.save(user);
 
         String token = tokenProvider.generateToken(user.getUsername());
@@ -73,6 +90,7 @@ public class AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole() != null ? user.getRole().getName() : "No Role")
+                .permissions(user.getRole() != null ? user.getRole().getPermissions() : java.util.Set.of())
                 .build();
     }
 
@@ -95,6 +113,7 @@ public class AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole() != null ? user.getRole().getName() : "No Role")
+                .permissions(user.getRole() != null ? user.getRole().getPermissions() : java.util.Set.of())
                 .build();
     }
 }

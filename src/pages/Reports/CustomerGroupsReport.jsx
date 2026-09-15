@@ -1,20 +1,65 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { customerService, saleService } from '../../services/apiService';
+import { formatCurrency } from './reportUtils';
 
 const CustomerGroupsReport = () => {
+  const [customers, setCustomers] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [customerData, saleData] = await Promise.all([
+          customerService.getAll(),
+          saleService.getAll(),
+        ]);
+        setCustomers(customerData || []);
+        setSales(saleData || []);
+      } catch (error) {
+        console.error('Failed to load customer group report:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const reportData = useMemo(() => {
+    const map = new Map();
+
+    customers.forEach((customer) => {
+      const group = customer?.customerGroup || 'General';
+      const current = map.get(group) || { group, customerCount: 0, totalSales: 0, salesCount: 0 };
+      current.customerCount += 1;
+      map.set(group, current);
+    });
+
+    sales.forEach((sale) => {
+      const customer = sale?.customer;
+      const group = customer?.customerGroup || 'General';
+      const current = map.get(group) || { group, customerCount: 0, totalSales: 0, salesCount: 0 };
+      current.totalSales += Number(sale?.total || 0);
+      current.salesCount += 1;
+      map.set(group, current);
+    });
+
+    return Array.from(map.values()).map((row) => ({
+      ...row,
+      avgSale: row.salesCount ? row.totalSales / row.salesCount : 0,
+    })).sort((a, b) => b.totalSales - a.totalSales);
+  }, [customers, sales]);
+
+  if (loading) {
+    return <div className="p-6 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div></div>;
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Customer Groups Report</h1>
-        <p className="text-gray-600 mt-2">Sales analysis by customer groups</p>
-      </div>
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-          </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">Export Report</button>
-        </div>
+        <p className="text-gray-600 mt-2">Sales analysis by customer group from live customer data.</p>
       </div>
       <div className="bg-white rounded-lg shadow-md p-6">
         <table className="min-w-full divide-y divide-gray-200">
@@ -27,9 +72,14 @@ const CustomerGroupsReport = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            <tr><td className="px-6 py-4 text-sm">VIP Customers</td><td className="px-6 py-4 text-sm text-right">45</td><td className="px-6 py-4 text-sm text-right font-semibold">$185,000</td><td className="px-6 py-4 text-sm text-right">$4,111</td></tr>
-            <tr><td className="px-6 py-4 text-sm">Regular Customers</td><td className="px-6 py-4 text-sm text-right">128</td><td className="px-6 py-4 text-sm text-right font-semibold">$156,000</td><td className="px-6 py-4 text-sm text-right">$1,219</td></tr>
-            <tr><td className="px-6 py-4 text-sm">Wholesale</td><td className="px-6 py-4 text-sm text-right">23</td><td className="px-6 py-4 text-sm text-right font-semibold">$95,000</td><td className="px-6 py-4 text-sm text-right">$4,130</td></tr>
+            {reportData.map((row) => (
+              <tr key={row.group}>
+                <td className="px-6 py-4 text-sm">{row.group}</td>
+                <td className="px-6 py-4 text-sm text-right">{row.customerCount}</td>
+                <td className="px-6 py-4 text-sm text-right font-semibold">{formatCurrency(row.totalSales)}</td>
+                <td className="px-6 py-4 text-sm text-right">{formatCurrency(row.avgSale)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

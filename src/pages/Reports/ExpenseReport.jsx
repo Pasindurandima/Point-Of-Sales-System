@@ -1,27 +1,56 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { expenseService } from '../../services/apiService';
+import { formatCurrency } from './reportUtils';
 
 const ExpenseReport = () => {
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadExpenses = async () => {
+      try {
+        const data = await expenseService.getAll();
+        setExpenses(data || []);
+      } catch (error) {
+        console.error('Failed to load expense report:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadExpenses();
+  }, []);
+
+  const breakdown = useMemo(() => {
+    const total = expenses.reduce((sum, expense) => sum + Number(expense?.amount || 0), 0);
+    const grouped = new Map();
+
+    expenses.forEach((expense) => {
+      const key = expense?.category || 'Other';
+      const current = grouped.get(key) || { category: key, count: 0, total: 0 };
+      current.count += 1;
+      current.total += Number(expense?.amount || 0);
+      grouped.set(key, current);
+    });
+
+    return Array.from(grouped.values())
+      .map((row) => ({ ...row, percentage: total ? (row.total / total) * 100 : 0 }))
+      .sort((a, b) => b.total - a.total);
+  }, [expenses]);
+
+  const totalExpenses = breakdown.reduce((sum, row) => sum + row.total, 0);
+
+  if (loading) {
+    return <div className="p-6 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div></div>;
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Expense Report</h1>
-        <p className="text-gray-600 mt-2">Comprehensive expense analysis and breakdown</p>
+        <p className="text-gray-600 mt-2">Live expense analysis by category and amount.</p>
       </div>
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>All Categories</option>
-              <option>Office Supplies</option>
-              <option>Utilities</option>
-              <option>Salaries</option>
-            </select>
-          </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">Export</button>
-        </div>
-      </div>
+
       <div className="bg-white rounded-lg shadow-md p-6">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -33,11 +62,23 @@ const ExpenseReport = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            <tr><td className="px-6 py-4 text-sm">Salaries & Wages</td><td className="px-6 py-4 text-sm text-right">12</td><td className="px-6 py-4 text-sm text-right font-semibold">$35,000</td><td className="px-6 py-4 text-sm text-right">43.2%</td></tr>
-            <tr><td className="px-6 py-4 text-sm">Rent</td><td className="px-6 py-4 text-sm text-right">3</td><td className="px-6 py-4 text-sm text-right font-semibold">$12,000</td><td className="px-6 py-4 text-sm text-right">14.8%</td></tr>
-            <tr><td className="px-6 py-4 text-sm">Utilities</td><td className="px-6 py-4 text-sm text-right">8</td><td className="px-6 py-4 text-sm text-right font-semibold">$4,500</td><td className="px-6 py-4 text-sm text-right">5.6%</td></tr>
-            <tr><td className="px-6 py-4 text-sm">Marketing</td><td className="px-6 py-4 text-sm text-right">15</td><td className="px-6 py-4 text-sm text-right font-semibold">$3,500</td><td className="px-6 py-4 text-sm text-right">4.3%</td></tr>
+            {breakdown.map((row) => (
+              <tr key={row.category}>
+                <td className="px-6 py-4 text-sm">{row.category}</td>
+                <td className="px-6 py-4 text-sm text-right">{row.count}</td>
+                <td className="px-6 py-4 text-sm text-right font-semibold">{formatCurrency(row.total)}</td>
+                <td className="px-6 py-4 text-sm text-right">{row.percentage.toFixed(1)}%</td>
+              </tr>
+            ))}
           </tbody>
+          <tfoot className="bg-gray-50">
+            <tr>
+              <td className="px-6 py-4 text-sm font-bold">Total</td>
+              <td className="px-6 py-4 text-sm text-right font-bold">{expenses.length}</td>
+              <td className="px-6 py-4 text-sm text-right font-bold">{formatCurrency(totalExpenses)}</td>
+              <td className="px-6 py-4 text-sm text-right font-bold">100%</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>

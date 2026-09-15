@@ -30,10 +30,8 @@ const Brands = () => {
       console.log('Brands API Response:', response);
       console.log('Response structure:', JSON.stringify(response, null, 2));
       
-      // Backend returns { success: true, message: "...", data: [...] }
-      // response is already response.data from axios
-      // So we need response.data to get the actual brands array
-      const brandsData = response.data || [];
+      // brandService already unwraps the API response to an array.
+      const brandsData = Array.isArray(response) ? response : response?.data || [];
       console.log('Brands array to display:', brandsData);
       console.log('Number of brands:', brandsData.length);
       
@@ -100,10 +98,12 @@ const Brands = () => {
         console.log('Deleting brand:', id);
         await brandService.delete(id);
         console.log('Brand deleted successfully');
-        fetchBrands(); // Refresh the list
+        setBrands((currentBrands) => currentBrands.filter((brand) => String(brand.id) !== String(id)));
+        await fetchBrands(); // Confirm the list from the database
       } catch (err) {
         console.error('Error deleting brand:', err);
-        alert('Failed to delete brand. Please try again.');
+        const errorMessage = err.response?.data?.message || err.message;
+        alert(`Failed to delete brand: ${errorMessage}`);
       }
     }
   };

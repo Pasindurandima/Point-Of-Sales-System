@@ -1,24 +1,28 @@
 package com.example.demo.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.demo.dto.BrandRequest;
 import com.example.demo.dto.BrandResponse;
 import com.example.demo.entity.Brand;
 import com.example.demo.exception.BadRequestException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.BrandRepository;
+import com.example.demo.repository.ProductRepository;
 import com.example.demo.util.DtoMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class BrandService {
 
     private final BrandRepository brandRepository;
+    private final ProductRepository productRepository;
     private final DtoMapper dtoMapper;
 
     @Transactional
@@ -31,6 +35,7 @@ public class BrandService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .build();
+        brand.setIsActive(true);
 
         Brand savedBrand = brandRepository.save(brand);
         return dtoMapper.toBrandResponse(savedBrand);
@@ -58,8 +63,10 @@ public class BrandService {
         return dtoMapper.toBrandResponse(brand);
     }
 
+    @Transactional(readOnly = true)
     public List<BrandResponse> getAllBrands() {
         return brandRepository.findAll().stream()
+                .filter(brand -> Boolean.TRUE.equals(brand.getIsActive()))
                 .map(dtoMapper::toBrandResponse)
                 .collect(Collectors.toList());
     }
@@ -68,7 +75,11 @@ public class BrandService {
     public void deleteBrand(Long id) {
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + id));
-        brand.setIsActive(false);
-        brandRepository.save(brand);
+
+        // Products can remain in the database without a brand.
+        productRepository.findByBrandId(id).forEach(product -> product.setBrand(null));
+        productRepository.flush();
+        brandRepository.delete(brand);
+        brandRepository.flush();
     }
 }

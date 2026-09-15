@@ -13,6 +13,8 @@ import com.example.demo.entity.Expense;
 
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
+
+    long countByUserId(Long userId);
     
     List<Expense> findByCategory(Expense.ExpenseCategory category);
     
