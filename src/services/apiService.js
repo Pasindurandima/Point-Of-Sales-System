@@ -297,6 +297,39 @@ export const purchaseService = {
     const response = await api.delete(`/purchases/${id}`);
     return response?.data;
   },
+
+  recordPayment: async (id, paymentData) => {
+    const response = await api.put(`/purchases/${id}/payment`, paymentData);
+    return response?.data?.data;
+  },
+};
+
+// Purchase Return Services
+export const purchaseReturnService = {
+  getAll: async () => {
+    const response = await api.get('/purchase-returns');
+    return response?.data?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/purchase-returns/${id}`);
+    return response?.data?.data;
+  },
+
+  create: async (purchaseReturnData) => {
+    const response = await api.post('/purchase-returns', purchaseReturnData);
+    return response?.data;
+  },
+
+  update: async (id, purchaseReturnData) => {
+    const response = await api.put(`/purchase-returns/${id}`, purchaseReturnData);
+    return response?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/purchase-returns/${id}`);
+    return response?.data;
+  },
 };
 
 // Category Services

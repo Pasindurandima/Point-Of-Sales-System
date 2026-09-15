@@ -11,6 +11,8 @@ import com.example.demo.dto.ExpenseResponse;
 import com.example.demo.dto.ProductResponse;
 import com.example.demo.dto.PurchaseItemResponse;
 import com.example.demo.dto.PurchaseResponse;
+import com.example.demo.dto.PurchaseReturnItemResponse;
+import com.example.demo.dto.PurchaseReturnResponse;
 import com.example.demo.dto.SaleItemResponse;
 import com.example.demo.dto.SaleResponse;
 import com.example.demo.dto.StockAdjustmentResponse;
@@ -23,6 +25,8 @@ import com.example.demo.entity.Expense;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.Purchase;
 import com.example.demo.entity.PurchaseItem;
+import com.example.demo.entity.PurchaseReturn;
+import com.example.demo.entity.PurchaseReturnItem;
 import com.example.demo.entity.Sale;
 import com.example.demo.entity.SaleItem;
 import com.example.demo.entity.StockAdjustment;
@@ -207,6 +211,36 @@ public class DtoMapper {
                 .taxRate(item.getTaxRate())
                 .taxAmount(item.getTaxAmount())
                 .total(item.getTotal())
+                .build();
+    }
+
+    public PurchaseReturnResponse toPurchaseReturnResponse(PurchaseReturn purchaseReturn) {
+        return PurchaseReturnResponse.builder()
+                .id(purchaseReturn.getId())
+                .returnNumber(purchaseReturn.getReturnNumber())
+                .purchaseInvoice(purchaseReturn.getPurchaseInvoice())
+                .supplier(purchaseReturn.getSupplier())
+                .returnDate(purchaseReturn.getReturnDate())
+                .returnReason(purchaseReturn.getReturnReason())
+                .refundType(purchaseReturn.getRefundType())
+                .notes(purchaseReturn.getNotes())
+                .total(purchaseReturn.getTotal())
+                .items(purchaseReturn.getItems().stream()
+                        .map(this::toPurchaseReturnItemResponse)
+                        .collect(Collectors.toList()))
+                .createdAt(purchaseReturn.getCreatedAt())
+                .updatedAt(purchaseReturn.getUpdatedAt())
+                .build();
+    }
+
+    public PurchaseReturnItemResponse toPurchaseReturnItemResponse(PurchaseReturnItem item) {
+        return PurchaseReturnItemResponse.builder()
+                .id(item.getId())
+                .product(toProductResponse(item.getProduct()))
+                .purchasedQty(item.getPurchasedQty())
+                .returnQty(item.getReturnQty())
+                .unitCost(item.getUnitCost())
+                .subtotal(item.getSubtotal())
                 .build();
     }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, RotateCcw, Truck, FileText, Calendar, AlertCircle, Plus, Trash2, Package, Search, Edit } from 'lucide-react';
-import { productService } from '../../services/apiService';
+import { productService, purchaseReturnService, purchaseService } from '../../services/apiService';
 
 const ListPurchaseReturn = () => {
   console.log('ListPurchaseReturn component loaded');
@@ -8,6 +8,7 @@ const ListPurchaseReturn = () => {
   const [showAddReturnModal, setShowAddReturnModal] = useState(false);
   const [showEditReturnModal, setShowEditReturnModal] = useState(false);
   const [purchaseReturns, setPurchaseReturns] = useState([]);
+  const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -30,8 +31,19 @@ const ListPurchaseReturn = () => {
   useEffect(() => {
     console.log('useEffect running - fetching purchase returns');
     fetchPurchaseReturns();
+    fetchPurchases();
     fetchProducts();
   }, []);
+
+  const fetchPurchases = async () => {
+    try {
+      const response = await purchaseService.getAll();
+      setPurchases(response || []);
+    } catch (err) {
+      console.error('Error fetching purchases:', err);
+      setError(`Failed to load purchases: ${err.message}`);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -48,17 +60,8 @@ const ListPurchaseReturn = () => {
   const fetchPurchaseReturns = async () => {
     try {
       setLoading(true);
-      console.log('Fetching purchase returns...');
-      
-      // TODO: Replace with actual API call when backend is ready
-      // const response = await purchaseReturnService.getAll();
-      // setPurchaseReturns(response.data || []);
-      
-      // For now, load from localStorage as mock data
-      const storedReturns = localStorage.getItem('purchaseReturns');
-      const returns = storedReturns ? JSON.parse(storedReturns) : [];
-      console.log('Purchase returns loaded:', returns);
-      setPurchaseReturns(returns);
+      const response = await purchaseReturnService.getAll();
+      setPurchaseReturns(response || []);
       setError(null);
     } catch (err) {
       console.error('Error fetching purchase returns:', err);
@@ -73,6 +76,16 @@ const ListPurchaseReturn = () => {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handlePurchaseInvoiceChange = (e) => {
+    const purchase = purchases.find(item => item.purchaseNumber === e.target.value);
+
+    setFormData(prev => ({
+      ...prev,
+      purchaseInvoice: purchase?.purchaseNumber || '',
+      supplier: purchase?.supplier?.name || ''
     }));
   };
 
@@ -130,35 +143,40 @@ const ListPurchaseReturn = () => {
     try {
       const total = calculateTotal();
       const returnData = {
-        ...formData,
-        items: returnItems,
+        purchaseInvoice: formData.purchaseInvoice,
+        supplier: formData.supplier,
+        returnDate: new Date(formData.returnDate).toISOString(),
+        returnNo: formData.returnNo || null,
+        returnReason: formData.returnReason,
+        refundType: formData.refundType,
+        notes: formData.notes,
         total,
-        id: editingReturn ? editingReturn.id : Date.now(),
-        createdAt: editingReturn ? editingReturn.createdAt : new Date().toISOString()
+        items: returnItems.map(item => ({
+          productId: parseInt(item.product, 10),
+          purchasedQty: parseInt(item.purchasedQty, 10) || 0,
+          returnQty: parseInt(item.returnQty, 10) || 0,
+          unitCost: parseFloat(item.unitCost) || 0,
+          subtotal: parseFloat(item.subtotal) || 0
+        }))
       };
+
+      if (!returnData.supplier) {
+        alert('Please select a purchase invoice with a supplier.');
+        return;
+      }
+
+      if (returnData.items.some(item => !Number.isInteger(item.productId) || item.returnQty < 1 || item.unitCost <= 0)) {
+        alert('Please select a product and enter a valid return quantity and unit cost.');
+        return;
+      }
 
       console.log('Saving purchase return:', returnData);
 
-      // TODO: Replace with actual API call when backend is ready
-      // if (editingReturn) {
-      //   await purchaseReturnService.update(editingReturn.id, returnData);
-      // } else {
-      //   await purchaseReturnService.create(returnData);
-      // }
-
-      // For now, save to localStorage
-      const storedReturns = localStorage.getItem('purchaseReturns');
-      let returns = storedReturns ? JSON.parse(storedReturns) : [];
-      
       if (editingReturn) {
-        returns = returns.map(r => r.id === editingReturn.id ? returnData : r);
-        console.log('Purchase return updated');
+        await purchaseReturnService.update(editingReturn.id, returnData);
       } else {
-        returns.push(returnData);
-        console.log('Purchase return created');
+        await purchaseReturnService.create(returnData);
       }
-      
-      localStorage.setItem('purchaseReturns', JSON.stringify(returns));
 
       // Reset form and close modal
       if (editingReturn) {
@@ -181,7 +199,11 @@ const ListPurchaseReturn = () => {
       fetchPurchaseReturns();
     } catch (err) {
       console.error('Error saving purchase return:', err);
-      alert(`Failed to save purchase return: ${err.message}`);
+      const validationErrors = err.response?.data?.errors;
+      const details = validationErrors && typeof validationErrors === 'object'
+        ? Object.values(validationErrors).join(' ')
+        : err.response?.data?.message || err.message;
+      alert(`Failed to save purchase return: ${details}`);
     }
   };
 
@@ -197,7 +219,14 @@ const ListPurchaseReturn = () => {
       refundType: purchaseReturn.refundType || 'CASH',
       notes: purchaseReturn.notes || ''
     });
-    setReturnItems(purchaseReturn.items || []);
+    setReturnItems((purchaseReturn.items || []).map(item => ({
+      id: item.id || Date.now(),
+      product: item.product?.id || item.productId || '',
+      purchasedQty: item.purchasedQty || 0,
+      returnQty: item.returnQty || 1,
+      unitCost: item.unitCost || 0,
+      subtotal: item.subtotal || 0
+    })));
     setShowEditReturnModal(true);
   };
 
@@ -206,16 +235,7 @@ const ListPurchaseReturn = () => {
       try {
         console.log('Deleting purchase return:', id);
         
-        // TODO: Replace with actual API call when backend is ready
-        // await purchaseReturnService.delete(id);
-
-        // For now, delete from localStorage
-        const storedReturns = localStorage.getItem('purchaseReturns');
-        let returns = storedReturns ? JSON.parse(storedReturns) : [];
-        returns = returns.filter(r => r.id !== id);
-        localStorage.setItem('purchaseReturns', JSON.stringify(returns));
-        
-        console.log('Purchase return deleted successfully');
+        await purchaseReturnService.delete(id);
         fetchPurchaseReturns();
       } catch (err) {
         console.error('Error deleting purchase return:', err);
@@ -384,15 +404,22 @@ const ListPurchaseReturn = () => {
                         <select
                           name="purchaseInvoice"
                           value={formData.purchaseInvoice}
-                          onChange={handleInputChange}
+                          onChange={handlePurchaseInvoiceChange}
                           className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                           required
                         >
                           <option value="">Select Purchase Invoice</option>
-                          <option value="PUR-001">PUR-001 - Sample Supplier</option>
-                          <option value="PUR-002">PUR-002 - Sample Supplier 2</option>
-                          <option value="PUR-003">PUR-003 - Sample Supplier 3</option>
+                          {purchases.map((purchase) => (
+                            <option key={purchase.id} value={purchase.purchaseNumber}>
+                              {purchase.purchaseNumber} - {purchase.supplier?.name || 'Unknown Supplier'}
+                            </option>
+                          ))}
                         </select>
+                        {purchases.length === 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            No saved purchases available.
+                          </p>
+                        )}
                       </div>
                     </div>
 

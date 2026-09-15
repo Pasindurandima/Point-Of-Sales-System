@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Eye, Trash2, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Eye, Trash2, AlertCircle, X, CreditCard } from 'lucide-react';
 import { purchaseService } from '../../services/apiService';
 
 const ListPurchase = () => {
@@ -10,6 +10,14 @@ const ListPurchase = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [selectedPurchase, setSelectedPurchase] = useState(null);
+  const [paymentPurchase, setPaymentPurchase] = useState(null);
+  const [paymentForm, setPaymentForm] = useState({
+    amount: '',
+    paymentMethod: 'CASH',
+    paymentAccount: '',
+    paymentNote: ''
+  });
 
   // Fetch purchases on component mount
   useEffect(() => {
@@ -34,19 +42,54 @@ const ListPurchase = () => {
     if (window.confirm('Are you sure you want to delete this purchase?')) {
       try {
         await purchaseService.delete(id);
-        alert('Purchase deleted successfully');
-        fetchPurchases(); // Refresh list
+        setPurchases(prevPurchases => prevPurchases.filter(purchase => purchase.id !== id));
       } catch (err) {
         console.error('Error deleting purchase:', err);
-        alert('Failed to delete purchase: ' + (err.response?.data?.message || err.message));
+        const message = err.response?.data?.message || err.message;
+        setError(`Failed to delete purchase: ${message}`);
       }
     }
   };
 
   const handleView = (purchase) => {
-    // TODO: Implement view modal or navigate to detail page
-    console.log('View purchase:', purchase);
-    alert('View functionality coming soon!');
+    setSelectedPurchase(purchase);
+  };
+
+  const handleOpenPayment = (purchase) => {
+    const dueAmount = Math.max(0, parseFloat(purchase.paymentDue ?? (purchase.total - (purchase.paidAmount || 0))) || 0);
+    setPaymentPurchase(purchase);
+    setPaymentForm({
+      amount: dueAmount.toFixed(2),
+      paymentMethod: purchase.paymentMethod || 'CASH',
+      paymentAccount: purchase.paymentAccount || '',
+      paymentNote: ''
+    });
+  };
+
+  const handlePaymentSubmit = async (event) => {
+    event.preventDefault();
+    const amount = parseFloat(paymentForm.amount);
+    const dueAmount = parseFloat(paymentPurchase.paymentDue ?? (paymentPurchase.total - (paymentPurchase.paidAmount || 0))) || 0;
+
+    if (!amount || amount <= 0 || amount > dueAmount) {
+      setError(`Payment must be greater than zero and no more than ${formatCurrency(dueAmount)}.`);
+      return;
+    }
+
+    try {
+      await purchaseService.recordPayment(paymentPurchase.id, {
+        amount,
+        paymentMethod: paymentForm.paymentMethod,
+        paymentAccount: paymentForm.paymentAccount || null,
+        paymentNote: paymentForm.paymentNote || null,
+        paidOn: new Date().toISOString()
+      });
+      setPaymentPurchase(null);
+      await fetchPurchases();
+    } catch (err) {
+      const message = err.response?.data?.message || err.message;
+      setError(`Failed to record payment: ${message}`);
+    }
   };
 
   // Filter purchases based on search and date
@@ -231,6 +274,15 @@ const ListPurchase = () => {
                         >
                           <Eye className="w-4 h-4 inline" />
                         </button>
+                        {parseFloat(purchase.paymentDue ?? (purchase.total - (purchase.paidAmount || 0))) > 0 && (
+                          <button
+                            onClick={() => handleOpenPayment(purchase)}
+                            className="mr-3 text-green-600 hover:text-green-900"
+                            title="Record Payment"
+                          >
+                            <CreditCard className="inline h-4 w-4" />
+                          </button>
+                        )}
                         <button 
                           onClick={() => handleDelete(purchase.id)}
                           className="text-red-600 hover:text-red-900"
@@ -275,6 +327,137 @@ const ListPurchase = () => {
           </div>
         )}
       </div>
+
+      {paymentPurchase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <form onSubmit={handlePaymentSubmit} className="w-full max-w-md rounded-lg bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b bg-green-600 px-6 py-4 text-white">
+              <div>
+                <h2 className="text-xl font-semibold">Record Payment</h2>
+                <p className="text-sm text-green-100">{paymentPurchase.purchaseNumber}</p>
+              </div>
+              <button type="button" onClick={() => setPaymentPurchase(null)} className="rounded p-1 hover:bg-green-700" title="Close payment form">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4 p-6">
+              <div className="rounded bg-red-50 p-3 text-sm text-red-700">
+                Outstanding balance: <strong>{formatCurrency(paymentPurchase.paymentDue ?? (paymentPurchase.total - (paymentPurchase.paidAmount || 0)))}</strong>
+              </div>
+              <label className="block text-sm font-medium text-gray-700">
+                Payment Amount
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  value={paymentForm.amount}
+                  onChange={(event) => setPaymentForm(prev => ({ ...prev, amount: event.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </label>
+              <label className="block text-sm font-medium text-gray-700">
+                Payment Method
+                <select
+                  value={paymentForm.paymentMethod}
+                  onChange={(event) => setPaymentForm(prev => ({ ...prev, paymentMethod: event.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="CASH">Cash</option>
+                  <option value="CARD">Card</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="CHEQUE">Cheque</option>
+                </select>
+              </label>
+              <label className="block text-sm font-medium text-gray-700">
+                Payment Account
+                <input
+                  type="text"
+                  value={paymentForm.paymentAccount}
+                  onChange={(event) => setPaymentForm(prev => ({ ...prev, paymentAccount: event.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Optional"
+                />
+              </label>
+              <label className="block text-sm font-medium text-gray-700">
+                Note
+                <textarea
+                  value={paymentForm.paymentNote}
+                  onChange={(event) => setPaymentForm(prev => ({ ...prev, paymentNote: event.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  rows="3"
+                />
+              </label>
+            </div>
+            <div className="flex justify-end gap-3 border-t bg-gray-50 px-6 py-4">
+              <button type="button" onClick={() => setPaymentPurchase(null)} className="rounded-lg border border-gray-300 px-4 py-2 font-semibold hover:bg-gray-100">Cancel</button>
+              <button type="submit" className="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700">Save Payment</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {selectedPurchase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b bg-teal-600 px-6 py-4 text-white">
+              <div>
+                <h2 className="text-xl font-semibold">Purchase Details</h2>
+                <p className="text-sm text-teal-100">{selectedPurchase.purchaseNumber}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPurchase(null)}
+                className="rounded p-1 hover:bg-teal-700"
+                title="Close details"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
+              <div><span className="text-sm text-gray-500">Date</span><p className="font-medium">{formatDate(selectedPurchase.purchaseDate)}</p></div>
+              <div><span className="text-sm text-gray-500">Supplier</span><p className="font-medium">{selectedPurchase.supplier?.name || 'N/A'}</p></div>
+              <div><span className="text-sm text-gray-500">Reference</span><p className="font-medium">{selectedPurchase.referenceNo || '-'}</p></div>
+              <div><span className="text-sm text-gray-500">Status</span><p className="mt-1">{getStatusBadge(selectedPurchase.status)}</p></div>
+              <div><span className="text-sm text-gray-500">Payment Method</span><p className="font-medium">{selectedPurchase.paymentMethod || '-'}</p></div>
+              <div><span className="text-sm text-gray-500">Business Location</span><p className="font-medium">{selectedPurchase.businessLocation || '-'}</p></div>
+            </div>
+
+            <div className="px-6 pb-6">
+              <h3 className="mb-3 text-lg font-semibold text-gray-800">Items</h3>
+              <div className="overflow-x-auto rounded border">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Product</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Quantity</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Unit Cost</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {(selectedPurchase.items || []).map(item => (
+                      <tr key={item.id}>
+                        <td className="px-4 py-3 text-sm">{item.product?.name || 'N/A'}</td>
+                        <td className="px-4 py-3 text-right text-sm">{item.quantity || 0}</td>
+                        <td className="px-4 py-3 text-right text-sm">{formatCurrency(item.unitCostBeforeTax || item.unitCost)}</td>
+                        <td className="px-4 py-3 text-right text-sm font-medium">{formatCurrency(item.total || item.lineTotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-4 flex justify-end gap-8 border-t pt-4 text-sm">
+                <span>Paid: <strong className="text-green-600">{formatCurrency(selectedPurchase.paidAmount)}</strong></span>
+                <span>Due: <strong className="text-red-600">{formatCurrency(selectedPurchase.paymentDue)}</strong></span>
+                <span>Total: <strong>{formatCurrency(selectedPurchase.total)}</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

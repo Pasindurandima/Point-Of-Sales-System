@@ -50,7 +50,6 @@ const menuItems = [
       { name: 'Units', path: '/products/units' },
       { name: 'Categories', path: '/products/categories' },
       { name: 'Brands', path: '/products/brands' },
-      { name: 'Warranties', path: '/products/warranties' },
     ]
   },
   { 
@@ -71,11 +70,8 @@ const menuItems = [
     hasSubmenu: true,
     submenu: [
       { name: 'All Sales', path: '/sell/all-sales' },
-      { name: 'Add Sale', path: '/sell/add-sale' },
       { name: 'List POS', path: '/sell/list-pos' },
       { name: 'POS', path: '/sell/pos' },
-      { name: 'Add Draft', path: '/sell/add-draft' },
-      { name: 'List Draft', path: '/sell/list-draft' },
       { name: 'Add Quotation', path: '/sell/add-quotation' },
       { name: 'List Quotations', path: '/sell/list-quotations' },
       { name: 'List Sell Return', path: '/sell/list-return' },

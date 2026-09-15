@@ -51,6 +51,7 @@ public class SecurityConfig {
                       .requestMatchers("/suppliers/**").hasAuthority("PERMISSION_SUPPLIERS")
                       .requestMatchers("/sales/**").hasAuthority("PERMISSION_SALES")
                       .requestMatchers("/purchases/**").hasAuthority("PERMISSION_PURCHASES")
+                      .requestMatchers("/purchase-returns/**").hasAuthority("PERMISSION_PURCHASES")
                       .requestMatchers("/expenses/**").hasAuthority("PERMISSION_EXPENSES")
                       .requestMatchers("/reports/**").hasAuthority("PERMISSION_REPORTS")
                         .anyRequest().authenticated()

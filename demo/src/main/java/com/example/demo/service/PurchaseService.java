@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dto.PurchaseItemRequest;
+import com.example.demo.dto.PurchasePaymentRequest;
 import com.example.demo.dto.PurchaseRequest;
 import com.example.demo.dto.PurchaseResponse;
 import com.example.demo.entity.Product;
@@ -157,6 +158,37 @@ public class PurchaseService {
     }
 
     @Transactional
+    public PurchaseResponse recordPayment(Long id, PurchasePaymentRequest request) {
+        Purchase purchase = purchaseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase not found with id: " + id));
+
+        BigDecimal total = purchase.getTotal() != null ? purchase.getTotal() : BigDecimal.ZERO;
+        BigDecimal paidAmount = purchase.getPaidAmount() != null ? purchase.getPaidAmount() : BigDecimal.ZERO;
+        BigDecimal paymentDue = total.subtract(paidAmount);
+
+        if (request.getAmount().compareTo(paymentDue) > 0) {
+            throw new BadRequestException("Payment amount cannot exceed the outstanding balance of " + paymentDue);
+        }
+
+        Purchase.PaymentMethod paymentMethod;
+        try {
+            paymentMethod = Purchase.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unsupported payment method: " + request.getPaymentMethod());
+        }
+
+        BigDecimal updatedPaidAmount = paidAmount.add(request.getAmount());
+        purchase.setPaidAmount(updatedPaidAmount);
+        purchase.setPaymentDue(total.subtract(updatedPaidAmount));
+        purchase.setPaidOn(request.getPaidOn() != null ? request.getPaidOn() : LocalDateTime.now());
+        purchase.setPaymentMethod(paymentMethod);
+        purchase.setPaymentAccount(request.getPaymentAccount());
+        purchase.setPaymentNote(request.getPaymentNote());
+
+        return dtoMapper.toPurchaseResponse(purchaseRepository.save(purchase));
+    }
+
+    @Transactional
     public void cancelPurchase(Long id) {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase not found with id: " + id));
@@ -174,6 +206,22 @@ public class PurchaseService {
 
         purchase.setStatus(Purchase.PurchaseStatus.CANCELLED);
         purchaseRepository.save(purchase);
+    }
+
+    @Transactional
+    public void deletePurchase(Long id) {
+        Purchase purchase = purchaseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase not found with id: " + id));
+
+        for (PurchaseItem item : purchase.getItems()) {
+            Product product = item.getProduct();
+            if (product != null) {
+                product.setQuantity(Math.max(0, product.getQuantity() - item.getQuantity()));
+                productRepository.save(product);
+            }
+        }
+
+        purchaseRepository.delete(purchase);
     }
 
     private String generatePurchaseNumber() {

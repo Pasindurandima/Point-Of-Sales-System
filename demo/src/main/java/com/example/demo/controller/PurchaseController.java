@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.ApiResponse;
+import com.example.demo.dto.PurchasePaymentRequest;
 import com.example.demo.dto.PurchaseRequest;
 import com.example.demo.dto.PurchaseResponse;
 import com.example.demo.service.PurchaseService;
@@ -78,5 +80,18 @@ public class PurchaseController {
     public ResponseEntity<ApiResponse<Void>> cancelPurchase(@PathVariable Long id) {
         purchaseService.cancelPurchase(id);
         return ResponseEntity.ok(ApiResponse.success("Purchase cancelled successfully", null));
+    }
+
+    @PutMapping("/{id}/payment")
+    public ResponseEntity<ApiResponse<PurchaseResponse>> recordPayment(@PathVariable Long id,
+            @Valid @RequestBody PurchasePaymentRequest request) {
+        PurchaseResponse response = purchaseService.recordPayment(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Purchase payment recorded successfully", response));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deletePurchase(@PathVariable Long id) {
+        purchaseService.deletePurchase(id);
+        return ResponseEntity.ok(ApiResponse.success("Purchase deleted successfully", null));
     }
 }

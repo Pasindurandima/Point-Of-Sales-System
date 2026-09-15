@@ -45,7 +45,6 @@ import SellingPriceGroup from '../pages/Products/SellingPriceGroup';
 import Units from '../pages/Products/Units';
 import Categories from '../pages/Products/Categories';
 import Brands from '../pages/Products/Brands';
-import Warranties from '../pages/Products/Warranties';
 
 // Purchases
 import ListPurchase from '../pages/Purchases/ListPurchase';
@@ -54,11 +53,8 @@ import ListPurchaseReturn from '../pages/Purchases/ListPurchaseReturn';
 
 // Sell
 import AllSales from '../pages/Sell/AllSales';
-import AddSale from '../pages/Sell/AddSale';
 import ListPOS from '../pages/Sell/ListPOS';
 import POS from '../pages/Sell/POS';
-import AddDraft from '../pages/Sell/AddDraft';
-import ListDraft from '../pages/Sell/ListDraft';
 import AddQuotation from '../pages/Sell/AddQuotation';
 import ListQuotations from '../pages/Sell/ListQuotations';
 import ListSellReturn from '../pages/Sell/ListSellReturn';
@@ -154,7 +150,6 @@ export default function AppRoutes() {
         <Route path="/products/units" element={<Units />} />
         <Route path="/products/categories" element={<Categories />} />
         <Route path="/products/brands" element={<Brands />} />
-        <Route path="/products/warranties" element={<Warranties />} />
         
         {/* Purchases Routes */}
         <Route path="/purchases" element={<Purchases />} />
@@ -165,11 +160,8 @@ export default function AppRoutes() {
         {/* Sell Routes */}
         <Route path="/sell" element={<Sell />} />
         <Route path="/sell/all-sales" element={<AllSales />} />
-        <Route path="/sell/add-sale" element={<AddSale />} />
         <Route path="/sell/list-pos" element={<ListPOS />} />
         <Route path="/sell/pos" element={<POS />} />
-        <Route path="/sell/add-draft" element={<AddDraft />} />
-        <Route path="/sell/list-draft" element={<ListDraft />} />
         <Route path="/sell/add-quotation" element={<AddQuotation />} />
         <Route path="/sell/list-quotations" element={<ListQuotations />} />
         <Route path="/sell/list-sell-return" element={<ListSellReturn />} />
