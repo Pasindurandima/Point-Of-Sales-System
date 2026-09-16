@@ -1,16 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { expenseService } from '../../services/apiService';
+import { expenseCategoryService, expenseService } from '../../services/apiService';
 import { formatCurrency } from './reportUtils';
 
 const ExpenseReport = () => {
   const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadExpenses = async () => {
       try {
-        const data = await expenseService.getAll();
+        const [data, categoryData] = await Promise.all([
+          expenseService.getAll(),
+          expenseCategoryService.getAll(),
+        ]);
         setExpenses(data || []);
+        setCategories(categoryData || []);
       } catch (error) {
         console.error('Failed to load expense report:', error);
       } finally {
@@ -21,13 +26,19 @@ const ExpenseReport = () => {
     loadExpenses();
   }, []);
 
+  const categoryNames = useMemo(
+    () => new Map(categories.map((category) => [category.code, category.name])),
+    [categories]
+  );
+
   const breakdown = useMemo(() => {
     const total = expenses.reduce((sum, expense) => sum + Number(expense?.amount || 0), 0);
     const grouped = new Map();
 
     expenses.forEach((expense) => {
-      const key = expense?.category || 'Other';
-      const current = grouped.get(key) || { category: key, count: 0, total: 0 };
+      const key = expense?.category || 'OTHER';
+      const displayName = categoryNames.get(key) || key.replace(/_/g, ' ');
+      const current = grouped.get(key) || { category: displayName, count: 0, total: 0 };
       current.count += 1;
       current.total += Number(expense?.amount || 0);
       grouped.set(key, current);
@@ -36,7 +47,7 @@ const ExpenseReport = () => {
     return Array.from(grouped.values())
       .map((row) => ({ ...row, percentage: total ? (row.total / total) * 100 : 0 }))
       .sort((a, b) => b.total - a.total);
-  }, [expenses]);
+  }, [categories, categoryNames, expenses]);
 
   const totalExpenses = breakdown.reduce((sum, row) => sum + row.total, 0);
 

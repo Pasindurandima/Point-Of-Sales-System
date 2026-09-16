@@ -114,7 +114,7 @@ const ProfitLossReport = () => {
         </div>
         <div className="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-lg shadow-md">
           <div className="text-sm opacity-90 mb-2">Total Expenses</div>
-          <div className="text-3xl font-bold">${parseFloat(reportData.totalCOGS + reportData.totalOperatingExpenses).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          <div className="text-3xl font-bold">${(Number(reportData.totalCOGS || 0) + Number(reportData.totalOperatingExpenses || 0)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
           <div className="text-xs opacity-75 mt-2">COGS + Operating</div>
         </div>
         <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-md">
