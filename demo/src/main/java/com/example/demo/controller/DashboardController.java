@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.dto.DashboardStats;
+import com.example.demo.dto.EssentialsOverview;
 import com.example.demo.service.DashboardService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,10 @@ public class DashboardController {
     public ResponseEntity<ApiResponse<DashboardStats>> getDashboardStats() {
         DashboardStats stats = dashboardService.getDashboardStats();
         return ResponseEntity.ok(ApiResponse.success("Dashboard statistics retrieved successfully", stats));
+    }
+
+    @GetMapping("/essentials")
+    public ResponseEntity<ApiResponse<EssentialsOverview>> getEssentialsOverview() {
+        return ResponseEntity.ok(ApiResponse.success("Essentials overview retrieved successfully", dashboardService.getEssentialsOverview()));
     }
 }

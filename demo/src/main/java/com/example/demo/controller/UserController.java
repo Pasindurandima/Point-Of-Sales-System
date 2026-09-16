@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,11 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.dto.AuthResponse;
+import com.example.demo.dto.ChangePasswordRequest;
 import com.example.demo.dto.RegisterRequest;
 import com.example.demo.dto.UserResponse;
 import com.example.demo.dto.UserUpdateRequest;
 import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
+import com.example.demo.exception.BadRequestException;
 import com.example.demo.repository.ExpenseRepository;
 import com.example.demo.repository.PurchaseRepository;
 import com.example.demo.repository.RoleRepository;
@@ -51,6 +55,53 @@ public class UserController {
     private final ExpenseRepository expenseRepository;
     private final StockAdjustmentRepository stockAdjustmentRepository;
     private final AuthService authService;
+    private final PasswordEncoder passwordEncoder;
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication) {
+        User user = currentUser(authentication);
+        return ResponseEntity.ok(ApiResponse.success("Profile retrieved successfully", UserResponse.from(user)));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> updateCurrentUser(Authentication authentication,
+            @RequestBody UserUpdateRequest request) {
+        User user = currentUser(authentication);
+        if (request.getEmail() != null && !request.getEmail().isBlank() && !request.getEmail().equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(request.getEmail().trim())) {
+            throw new BadRequestException("Email already exists");
+        }
+        if (request.getUsername() != null && !request.getUsername().isBlank() && !request.getUsername().equalsIgnoreCase(user.getUsername()) && userRepository.existsByUsername(request.getUsername().trim())) {
+            throw new BadRequestException("Username already exists");
+        }
+        if (request.getUsername() != null && !request.getUsername().isBlank()) user.setUsername(request.getUsername().trim());
+        if (request.getEmail() != null && !request.getEmail().isBlank()) user.setEmail(request.getEmail().trim());
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName().trim());
+        if (request.getLastName() != null) user.setLastName(request.getLastName().trim());
+        if (request.getPrefix() != null) user.setPrefix(request.getPrefix().trim());
+        if (request.getPhone() != null) user.setPhone(request.getPhone().trim());
+        if (request.getAddress() != null) user.setAddress(request.getAddress().trim());
+        return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", UserResponse.from(userRepository.save(user))));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        User user = currentUser(authentication);
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+        if (request.getNewPassword().length() < 6) {
+            throw new BadRequestException("New password must be at least 6 characters long");
+        }
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        return ResponseEntity.ok(ApiResponse.success("Password changed successfully", null));
+    }
+
+    private User currentUser(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) throw new BadRequestException("Authenticated user not found");
+        return userRepository.findByUsername(authentication.getName()).orElseThrow(() -> new BadRequestException("Authenticated user not found"));
+    }
 
     @PostMapping
     @PreAuthorize("hasAuthority('PERMISSION_USERS')")

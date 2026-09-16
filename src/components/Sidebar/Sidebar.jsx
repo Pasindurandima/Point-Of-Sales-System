@@ -164,7 +164,6 @@ const menuItems = [
       { name: 'Tax Rates', path: '/settings/tax-rates' },
     ]
   },
-  { name: 'HRM', path: '/hrm', icon: FaUserTie },
   { name: 'Essentials', path: '/essentials', icon: FaLightbulb },
   { name: 'Profile', path: '/profile', icon: FaUserCircle },
   { name: 'Sign Out', path: '/signout', icon: FaSignOutAlt },

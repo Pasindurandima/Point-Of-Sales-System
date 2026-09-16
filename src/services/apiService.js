@@ -39,6 +39,18 @@ export const authService = {
 
 // User Management Services
 export const userService = {
+  getCurrent: async () => {
+    const response = await api.get('/users/me');
+    return response?.data?.data;
+  },
+  updateCurrent: async (userData) => {
+    const response = await api.put('/users/me', userData);
+    return response?.data?.data;
+  },
+  changePassword: async (passwordData) => {
+    const response = await api.put('/users/me/password', passwordData);
+    return response?.data;
+  },
   getAll: async () => {
     const response = await api.get('/users');
     return response?.data?.data || [];
@@ -510,6 +522,10 @@ export const expenseCategoryService = {
 
 // Dashboard Statistics
 export const dashboardService = {
+  getEssentialsOverview: async () => {
+    const response = await api.get('/dashboard/essentials');
+    return response?.data?.data;
+  },
   getStatistics: async () => {
     const response = await api.get('/dashboard/statistics');
     return response?.data?.data;

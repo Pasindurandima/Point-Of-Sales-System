@@ -1,13 +1,28 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.DashboardStats;
-import com.example.demo.repository.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
+import com.example.demo.dto.DashboardStats;
+import com.example.demo.dto.EssentialsActivity;
+import com.example.demo.dto.EssentialsOverview;
+import com.example.demo.entity.Product;
+import com.example.demo.repository.CustomerRepository;
+import com.example.demo.repository.ExpenseRepository;
+import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.PurchaseRepository;
+import com.example.demo.repository.SaleRepository;
+import com.example.demo.repository.StockAdjustmentRepository;
+import com.example.demo.repository.SupplierRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +34,7 @@ public class DashboardService {
     private final SaleRepository saleRepository;
     private final PurchaseRepository purchaseRepository;
     private final ExpenseRepository expenseRepository;
+    private final StockAdjustmentRepository stockAdjustmentRepository;
 
     public DashboardStats getDashboardStats() {
         LocalDateTime now = LocalDateTime.now();
@@ -82,6 +98,37 @@ public class DashboardService {
                 .yearProfit(yearProfit)
                 .build();
     }
+
+            public EssentialsOverview getEssentialsOverview() {
+            LocalDateTime todayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
+            LocalDateTime todayEnd = LocalDateTime.now().toLocalDate().atTime(LocalTime.MAX);
+            List<Product> lowStockProducts = productRepository.findLowStockProducts();
+            BigDecimal todaySales = getSafeValue(saleRepository.getTotalSalesByDateRange(todayStart, todayEnd));
+
+            List<EssentialsActivity> activities = new ArrayList<>();
+            saleRepository.findAllOrderByDateDesc().stream().limit(10).forEach(sale -> activities.add(new EssentialsActivity(
+                "sale", "Sale completed", sale.getInvoiceNumber(), sale.getSaleDate(), sale.getTotal())));
+            productRepository.findAllActiveProducts().stream().limit(10).forEach(product -> activities.add(new EssentialsActivity(
+                "product", "Product added", product.getName() + " - SKU: " + product.getSku(), product.getCreatedAt(), null)));
+            expenseRepository.findAllOrderByDateDesc().stream().limit(10).forEach(expense -> activities.add(new EssentialsActivity(
+                "expense", "Expense recorded", expense.getTitle(), expense.getExpenseDate(), expense.getAmount())));
+            stockAdjustmentRepository.findAll().stream().limit(10).forEach(adjustment -> activities.add(new EssentialsActivity(
+                "stock", "Stock adjusted", adjustment.getTotalQuantity() + " items updated", adjustment.getAdjustmentDate(), adjustment.getTotalAmount())));
+
+            return EssentialsOverview.builder()
+                .totalProducts(productRepository.count())
+                .totalCustomers(customerRepository.count())
+                .lowStockCount(lowStockProducts.size())
+                .todaySalesCount(saleRepository.getCountByDateRange(todayStart, todayEnd))
+                .todaySales(todaySales)
+                .lowStockProducts(lowStockProducts.stream().map(Product::getName).collect(Collectors.toList()))
+                .recentActivities(activities.stream()
+                    .filter(activity -> activity.getDate() != null)
+                    .sorted(Comparator.comparing(EssentialsActivity::getDate).reversed())
+                    .limit(8)
+                    .collect(Collectors.toList()))
+                .build();
+            }
 
     private BigDecimal getSafeValue(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;

@@ -1,509 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaLock, FaBell, FaSave, FaEdit } from 'react-icons/fa';
-import { authService } from '../services/apiService';
+import React, { useEffect, useState } from 'react';
+import { FaEnvelope, FaLock, FaMapMarkerAlt, FaPhone, FaUser } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { authService, userService } from '../services/apiService';
 
-const Profile = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('personal');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+const emptyProfile = { id: '', firstName: '', lastName: '', email: '', phone: '', address: '', username: '', role: '', isActive: true, createdAt: '' };
+const emptyPassword = { currentPassword: '', newPassword: '', confirmPassword: '' };
 
-  // Form states
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    username: ''
-  });
+const toFormData = (user) => ({
+  firstName: user.firstName || '',
+  lastName: user.lastName || '',
+  email: user.email || '',
+  phone: user.phone || '',
+  address: user.address || '',
+  username: user.username || '',
+});
 
-  // Password change state
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  // Load current user data
-  useEffect(() => {
-    const user = authService.getCurrentUser();
-    if (user) {
-      setCurrentUser(user);
-      setFormData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        address: user.address || '',
-        username: user.username || ''
-      });
-    } else {
-      navigate('/sign-in');
-    }
-  }, [navigate]);
-
-  // Handle input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Handle password input changes
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Handle profile update
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      // Update localStorage
-      const updatedUser = {
-        ...currentUser,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        username: formData.username
-      };
-      
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setCurrentUser(updatedUser);
-      setIsEditing(false);
-      
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
-      
-      // Reload page to update navbar
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to update profile' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle password change
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
-    // Validation
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage({ type: 'error', text: 'New passwords do not match!' });
-      setLoading(false);
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'Password must be at least 6 characters long!' });
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setMessage({ type: 'success', text: 'Password changed successfully!' });
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-    } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to change password' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!currentUser) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin w-16 h-16 border-4 border-teal-600 border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
-
-  const getInitials = () => {
-    if (currentUser.firstName && currentUser.lastName) {
-      return `${currentUser.firstName.charAt(0)}${currentUser.lastName.charAt(0)}`.toUpperCase();
-    }
-    return currentUser.username?.charAt(0)?.toUpperCase() || 'U';
-  };
-
-  const getJoinDate = () => {
-    const date = new Date(currentUser.createdAt || Date.now());
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-  };
-
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">My Profile</h1>
-        <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
-      </div>
-
-      {/* Success/Error Messages */}
-      {message.text && (
-        <div className={`mb-6 p-4 rounded-lg ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-        }`}>
-          {message.text}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Profile Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-center mb-6">
-              <div className="relative inline-block">
-                <div className="w-32 h-32 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-4xl font-bold">
-                  {getInitials()}
-                </div>
-                <button className="absolute bottom-0 right-0 bg-teal-600 hover:bg-teal-700 text-white p-2 rounded-full shadow-lg transition-colors">
-                  <FaCamera />
-                </button>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mt-4">
-                {currentUser.firstName && currentUser.lastName 
-                  ? `${currentUser.firstName} ${currentUser.lastName}` 
-                  : currentUser.username}
-              </h2>
-              <p className="text-sm text-gray-600 capitalize">{currentUser.role?.toLowerCase() || 'User'}</p>
-              <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                Active
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <button
-                onClick={() => setActiveTab('personal')}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                  activeTab === 'personal'
-                    ? 'bg-teal-50 text-teal-700 font-medium border-l-4 border-teal-600'
-                    : 'hover:bg-gray-50 text-gray-700'
-                }`}
-              >
-                <FaUser />
-                Personal Info
-              </button>
-              <button
-                onClick={() => setActiveTab('security')}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                  activeTab === 'security'
-                    ? 'bg-teal-50 text-teal-700 font-medium border-l-4 border-teal-600'
-                    : 'hover:bg-gray-50 text-gray-700'
-                }`}
-              >
-                <FaLock />
-                Security
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Account Info</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Member Since</span>
-                <span className="text-sm font-semibold">{getJoinDate()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Username</span>
-                <span className="text-sm font-semibold">{currentUser.username}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">User ID</span>
-                <span className="text-sm font-semibold">#{currentUser.userId}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="lg:col-span-3">
-          {/* Personal Info Tab */}
-          {activeTab === 'personal' && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Personal Information</h2>
-              <form className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
-                    <input
-                      type="text"
-                      defaultValue="John"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
-                    <input
-                      type="text"
-                      defaultValue="Doe"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <FaEnvelope className="inline mr-2" />
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    defaultValue="john.doe@business.com"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <FaPhone className="inline mr-2" />
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      defaultValue="+1 234 567 8900"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                    <input
-                      type="date"
-                      defaultValue="1990-01-15"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <FaMapMarkerAlt className="inline mr-2" />
-                    Address
-                  </label>
-                  <textarea
-                    rows="3"
-                    defaultValue="123 Business Street, Suite 100"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  ></textarea>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                    <input
-                      type="text"
-                      defaultValue="New York"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
-                    <input
-                      type="text"
-                      defaultValue="NY"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ZIP/Postal Code</label>
-                    <input
-                      type="text"
-                      defaultValue="10001"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                  <textarea
-                    rows="4"
-                    placeholder="Tell us about yourself..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  ></textarea>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors"
-                  >
-                    Save Changes
-                  </button>
-                  <button
-                    type="button"
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Security Tab */}
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-6">Change Password</h2>
-                <form className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                    <input
-                      type="password"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                    <input
-                      type="password"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                    <input
-                      type="password"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors"
-                  >
-                    Update Password
-                  </button>
-                </form>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-6">Two-Factor Authentication</h2>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="font-medium text-gray-900">Enable 2FA</p>
-                    <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-6">Active Sessions</h2>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">Windows PC - Chrome</p>
-                      <p className="text-xs text-gray-500">New York, USA • Active now</p>
-                    </div>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Current</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">iPhone - Safari</p>
-                      <p className="text-xs text-gray-500">New York, USA • 2 hours ago</p>
-                    </div>
-                    <button className="text-red-600 hover:text-red-800 text-sm">Logout</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Notifications Tab */}
-          {activeTab === 'notifications' && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Notification Preferences</h2>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-4">Email Notifications</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div>
-                        <p className="font-medium text-gray-900">Order Updates</p>
-                        <p className="text-sm text-gray-600">Receive notifications about order status changes</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="w-4 h-4 text-teal-600 rounded" />
-                    </label>
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div>
-                        <p className="font-medium text-gray-900">Low Stock Alerts</p>
-                        <p className="text-sm text-gray-600">Get notified when products are running low</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="w-4 h-4 text-teal-600 rounded" />
-                    </label>
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div>
-                        <p className="font-medium text-gray-900">Payment Confirmations</p>
-                        <p className="text-sm text-gray-600">Receive payment receipts and confirmations</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="w-4 h-4 text-teal-600 rounded" />
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-4">System Notifications</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div>
-                        <p className="font-medium text-gray-900">Security Alerts</p>
-                        <p className="text-sm text-gray-600">Important security updates and login attempts</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="w-4 h-4 text-teal-600 rounded" />
-                    </label>
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div>
-                        <p className="font-medium text-gray-900">Weekly Reports</p>
-                        <p className="text-sm text-gray-600">Receive weekly business performance reports</p>
-                      </div>
-                      <input type="checkbox" className="w-4 h-4 text-teal-600 rounded" />
-                    </label>
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div>
-                        <p className="font-medium text-gray-900">Marketing Updates</p>
-                        <p className="text-sm text-gray-600">News and updates about new features</p>
-                      </div>
-                      <input type="checkbox" className="w-4 h-4 text-teal-600 rounded" />
-                    </label>
-                  </div>
-                </div>
-
-                <button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors">
-                  Save Preferences
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+const saveSessionUser = (user) => {
+  const current = authService.getCurrentUser() || {};
+  localStorage.setItem('user', JSON.stringify({ ...current, userId: user.id || current.userId, username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone, address: user.address, role: user.role, createdAt: user.createdAt }));
 };
 
-export default Profile;
+export default function Profile() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('personal');
+  const [profile, setProfile] = useState(emptyProfile);
+  const [formData, setFormData] = useState(toFormData(emptyProfile));
+  const [passwordData, setPasswordData] = useState(emptyPassword);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  useEffect(() => {
+    userService.getCurrent()
+      .then((user) => { setProfile({ ...emptyProfile, ...user }); setFormData(toFormData(user)); saveSessionUser(user); })
+      .catch((error) => {
+        const localUser = authService.getCurrentUser();
+        if (localUser) { setProfile({ ...emptyProfile, ...localUser, id: localUser.userId }); setFormData(toFormData(localUser)); }
+        else navigate('/sign-in');
+        setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to load profile' });
+      })
+      .finally(() => setLoading(false));
+  }, [navigate]);
+
+  const updateField = (name, value) => setFormData((current) => ({ ...current, [name]: value }));
+  const updatePassword = (name, value) => setPasswordData((current) => ({ ...current, [name]: value }));
+
+  const handleProfileSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true); setMessage({ type: '', text: '' });
+    try {
+      const updated = await userService.updateCurrent(formData);
+      setProfile({ ...profile, ...updated }); setFormData(toFormData(updated)); saveSessionUser(updated);
+      setMessage({ type: 'success', text: 'Profile updated successfully.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to update profile' });
+    } finally { setSaving(false); }
+  };
+
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+    if (passwordData.newPassword.length < 6) { setMessage({ type: 'error', text: 'New password must be at least 6 characters long.' }); return; }
+    if (passwordData.newPassword !== passwordData.confirmPassword) { setMessage({ type: 'error', text: 'New passwords do not match.' }); return; }
+    setSaving(true); setMessage({ type: '', text: '' });
+    try {
+      await userService.changePassword({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword });
+      setPasswordData(emptyPassword); setMessage({ type: 'success', text: 'Password changed successfully.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to change password' });
+    } finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="flex h-64 items-center justify-center text-gray-600">Loading profile...</div>;
+
+  const displayName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || profile.username || 'User';
+  const initials = displayName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  const joinDate = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Not available';
+  const tabClass = (tab) => `w-full rounded-lg px-4 py-3 text-left transition-colors ${activeTab === tab ? 'border-l-4 border-teal-600 bg-teal-50 font-medium text-teal-700' : 'text-gray-700 hover:bg-gray-50'}`;
+
+  return <div className="p-6">
+    <div className="mb-6"><h1 className="text-2xl font-bold text-gray-800">My Profile</h1><p className="mt-2 text-gray-600">Manage your account information and security</p></div>
+    {message.text && <div className={`mb-6 rounded-lg border p-4 ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-800'}`}>{message.text}</div>}
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <aside className="lg:col-span-1">
+        <div className="rounded-lg bg-white p-6 shadow-md"><div className="mb-6 text-center"><div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-teal-600 text-4xl font-bold text-white">{initials}</div><h2 className="mt-4 text-xl font-bold text-gray-900">{displayName}</h2><p className="text-sm capitalize text-gray-600">{profile.role || 'User'}</p><span className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold ${profile.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>{profile.isActive ? 'Active' : 'Inactive'}</span></div><div className="space-y-2"><button type="button" onClick={() => setActiveTab('personal')} className={tabClass('personal')}><FaUser className="mr-3 inline" />Personal Info</button><button type="button" onClick={() => setActiveTab('security')} className={tabClass('security')}><FaLock className="mr-3 inline" />Security</button></div></div>
+        <div className="mt-6 rounded-lg bg-white p-6 shadow-md"><h3 className="mb-3 font-semibold text-gray-800">Account Info</h3><div className="space-y-3 text-sm"><div className="flex justify-between gap-3"><span className="text-gray-600">Member Since</span><strong>{joinDate}</strong></div><div className="flex justify-between gap-3"><span className="text-gray-600">Username</span><strong>{profile.username || 'Not set'}</strong></div><div className="flex justify-between gap-3"><span className="text-gray-600">User ID</span><strong>#{profile.id || 'N/A'}</strong></div></div></div>
+      </aside>
+      <main className="lg:col-span-3">{activeTab === 'personal' ? <form onSubmit={handleProfileSubmit} className="rounded-lg bg-white p-6 shadow-md"><h2 className="mb-6 text-lg font-semibold text-gray-800">Personal Information</h2><div className="grid grid-cols-1 gap-6 md:grid-cols-2"><Field label="First Name" value={formData.firstName} onChange={(event) => updateField('firstName', event.target.value)} required /><Field label="Last Name" value={formData.lastName} onChange={(event) => updateField('lastName', event.target.value)} required /><Field label="Email Address" type="email" icon={FaEnvelope} value={formData.email} onChange={(event) => updateField('email', event.target.value)} required /><Field label="Phone Number" icon={FaPhone} value={formData.phone} onChange={(event) => updateField('phone', event.target.value)} /><div className="md:col-span-2"><label className="mb-2 block text-sm font-medium text-gray-700">Username</label><input value={formData.username} readOnly className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 text-gray-600" /></div><div className="md:col-span-2"><label className="mb-2 block text-sm font-medium text-gray-700"><FaMapMarkerAlt className="mr-2 inline" />Address</label><textarea rows="3" value={formData.address} onChange={(event) => updateField('address', event.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2" /></div></div><div className="mt-6 flex gap-3"><button disabled={saving} className="rounded-lg bg-teal-600 px-6 py-2 text-white hover:bg-teal-700 disabled:bg-gray-400">{saving ? 'Saving...' : 'Save Changes'}</button><button type="button" onClick={() => setFormData(toFormData(profile))} className="rounded-lg bg-gray-200 px-6 py-2 text-gray-800 hover:bg-gray-300">Cancel</button></div></form> : <form onSubmit={handlePasswordSubmit} className="rounded-lg bg-white p-6 shadow-md"><h2 className="mb-6 text-lg font-semibold text-gray-800">Change Password</h2><div className="space-y-4"><PasswordField label="Current Password" value={passwordData.currentPassword} onChange={(event) => updatePassword('currentPassword', event.target.value)} /><PasswordField label="New Password" value={passwordData.newPassword} onChange={(event) => updatePassword('newPassword', event.target.value)} /><PasswordField label="Confirm New Password" value={passwordData.confirmPassword} onChange={(event) => updatePassword('confirmPassword', event.target.value)} /></div><button disabled={saving} className="mt-6 rounded-lg bg-teal-600 px-6 py-2 text-white hover:bg-teal-700 disabled:bg-gray-400">{saving ? 'Updating...' : 'Update Password'}</button></form>}</main>
+    </div>
+  </div>;
+}
+
+function Field({ label, value, onChange, type = 'text', required, icon: Icon }) { return <div><label className="mb-2 block text-sm font-medium text-gray-700">{Icon && <Icon className="mr-2 inline" />}{label}{required ? ' *' : ''}</label><input type={type} value={value} onChange={onChange} required={required} className="w-full rounded-lg border border-gray-300 px-4 py-2" /></div>; }
+function PasswordField({ label, value, onChange }) { return <div><label className="mb-2 block text-sm font-medium text-gray-700">{label}</label><input type="password" value={value} onChange={onChange} required className="w-full rounded-lg border border-gray-300 px-4 py-2" /></div>; }
