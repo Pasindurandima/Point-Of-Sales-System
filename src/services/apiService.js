@@ -485,6 +485,29 @@ export const expenseService = {
   },
 };
 
+// Expense Category Services
+export const expenseCategoryService = {
+  getAll: async () => {
+    const response = await api.get('/expense-categories');
+    return response?.data?.data || [];
+  },
+
+  create: async (categoryData) => {
+    const response = await api.post('/expense-categories', categoryData);
+    return response?.data?.data;
+  },
+
+  update: async (id, categoryData) => {
+    const response = await api.put(`/expense-categories/${id}`, categoryData);
+    return response?.data?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/expense-categories/${id}`);
+    return response?.data;
+  },
+};
+
 // Dashboard Statistics
 export const dashboardService = {
   getStatistics: async () => {

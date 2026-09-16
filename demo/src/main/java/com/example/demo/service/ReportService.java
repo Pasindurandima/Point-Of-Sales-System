@@ -127,7 +127,7 @@ public class ReportService {
     private Map<String, BigDecimal> calculateExpenseBreakdown(List<Expense> expenses) {
         return expenses.stream()
                 .collect(Collectors.groupingBy(
-                        expense -> expense.getCategory().name(),
+                        expense -> expense.getCategory(),
                         Collectors.reducing(BigDecimal.ZERO, Expense::getAmount, BigDecimal::add)
                 ));
     }

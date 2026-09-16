@@ -16,7 +16,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     long countByUserId(Long userId);
     
-    List<Expense> findByCategory(Expense.ExpenseCategory category);
+    List<Expense> findByCategory(String category);
     
     List<Expense> findByExpenseDateBetween(LocalDateTime startDate, LocalDateTime endDate);
     
@@ -26,6 +26,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.expenseDate >= :startDate AND e.expenseDate <= :endDate")
     BigDecimal getTotalExpensesByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
     
-    @Query("SELECT e FROM Expense e ORDER BY e.expenseDate DESC")
+    @Query("SELECT e FROM Expense e WHERE e.isActive = true ORDER BY e.expenseDate DESC")
     List<Expense> findAllOrderByDateDesc();
 }

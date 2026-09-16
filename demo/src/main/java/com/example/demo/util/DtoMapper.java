@@ -14,14 +14,14 @@ import com.example.demo.dto.PurchaseResponse;
 import com.example.demo.dto.PurchaseReturnItemResponse;
 import com.example.demo.dto.PurchaseReturnResponse;
 import com.example.demo.dto.SaleItemResponse;
+import com.example.demo.dto.SaleResponse;
 import com.example.demo.dto.SaleReturnItemResponse;
 import com.example.demo.dto.SaleReturnResponse;
-import com.example.demo.dto.SaleResponse;
-import com.example.demo.dto.StockAdjustmentResponse;
-import com.example.demo.dto.StockAdjustmentItemResponse;
-import com.example.demo.dto.StockTransferResponse;
-import com.example.demo.dto.StockTransferItemResponse;
 import com.example.demo.dto.ShipmentResponse;
+import com.example.demo.dto.StockAdjustmentItemResponse;
+import com.example.demo.dto.StockAdjustmentResponse;
+import com.example.demo.dto.StockTransferItemResponse;
+import com.example.demo.dto.StockTransferResponse;
 import com.example.demo.dto.SupplierResponse;
 import com.example.demo.entity.Brand;
 import com.example.demo.entity.Category;
@@ -36,11 +36,11 @@ import com.example.demo.entity.Sale;
 import com.example.demo.entity.SaleItem;
 import com.example.demo.entity.SaleReturn;
 import com.example.demo.entity.SaleReturnItem;
+import com.example.demo.entity.Shipment;
 import com.example.demo.entity.StockAdjustment;
 import com.example.demo.entity.StockAdjustmentItem;
 import com.example.demo.entity.StockTransfer;
 import com.example.demo.entity.StockTransferItem;
-import com.example.demo.entity.Shipment;
 import com.example.demo.entity.Supplier;
 
 @Component
@@ -292,7 +292,7 @@ public class DtoMapper {
                 .amount(expense.getAmount())
                 .expenseDate(expense.getExpenseDate())
                 .businessLocation(expense.getBusinessLocation())
-                .category(expense.getCategory().name())
+                .category(expense.getCategory())
                 .paymentMethod(expense.getPaymentMethod().name())
                 .paymentAccount(expense.getPaymentAccount())
                 .taxPercent(expense.getTaxPercent())

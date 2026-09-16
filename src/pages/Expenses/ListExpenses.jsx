@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { expenseService } from '../../services/apiService';
+import { expenseCategoryService } from '../../services/apiService';
 
 const ListExpenses = () => {
   const navigate = useNavigate();
@@ -12,9 +13,12 @@ const ListExpenses = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [viewExpense, setViewExpense] = useState(null);
 
   useEffect(() => {
     fetchExpenses();
+    expenseCategoryService.getAll().then(setCategories).catch((err) => console.error('Error fetching expense categories:', err));
   }, []);
 
   const fetchExpenses = async () => {
@@ -29,6 +33,10 @@ const ListExpenses = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (expense) => {
+    navigate('/expenses/add', { state: { editExpense: expense } });
   };
 
   const handleDelete = async (id) => {
@@ -57,6 +65,15 @@ const ListExpenses = () => {
   const formatPaymentMethod = (method) => {
     if (!method) return 'N/A';
     return method.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const getDocumentType = (documentUrl) => {
+    if ((documentUrl || '').startsWith('data:image/')) return 'image';
+    if ((documentUrl || '').startsWith('data:application/pdf')) return 'pdf';
+    const cleanUrl = (documentUrl || '').split('?')[0].toLowerCase();
+    if (/\.(png|jpe?g|gif|webp|bmp)$/.test(cleanUrl)) return 'image';
+    if (cleanUrl.endsWith('.pdf')) return 'pdf';
+    return 'other';
   };
 
   const filteredExpenses = expenses.filter((expense) => {
@@ -111,15 +128,7 @@ const ListExpenses = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="">All Categories</option>
-              <option value="OFFICE_SUPPLIES">Office Supplies</option>
-              <option value="UTILITIES">Utilities</option>
-              <option value="SALARIES">Salaries</option>
-              <option value="RENT">Rent</option>
-              <option value="MARKETING">Marketing</option>
-              <option value="TRANSPORTATION">Transportation</option>
-              <option value="MAINTENANCE">Maintenance</option>
-              <option value="INSURANCE">Insurance</option>
-              <option value="OTHER">Other</option>
+              {categories.map((category) => <option key={category.id} value={category.code}>{category.name}</option>)}
             </select>
             <input
               type="date"
@@ -215,6 +224,20 @@ const ListExpenses = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
+                            onClick={() => setViewExpense(expense)}
+                            className="mr-3 text-teal-600 hover:text-teal-900"
+                            title="View details"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleEdit(expense)}
+                            className="mr-3 text-blue-600 hover:text-blue-900"
+                            title="Edit"
+                          >
+                            Edit
+                          </button>
+                          <button
                             onClick={() => handleDelete(expense.id)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete"
@@ -248,6 +271,49 @@ const ListExpenses = () => {
           </>
         )}
       </div>
+
+      {viewExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+            <div className="mb-5 flex items-start justify-between gap-4 border-b pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Expense Details</h2>
+                <p className="mt-1 text-sm text-gray-500">{viewExpense.referenceNo || 'Expense'} • {formatDate(viewExpense.expenseDate)}</p>
+              </div>
+              <button onClick={() => setViewExpense(null)} className="text-gray-500 hover:text-gray-900">Close</button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div><span className="text-sm text-gray-500">Expense For</span><p className="font-medium text-gray-900">{viewExpense.title || 'N/A'}</p></div>
+              <div><span className="text-sm text-gray-500">Category</span><p className="font-medium text-gray-900">{formatCategory(viewExpense.category)}</p></div>
+              <div><span className="text-sm text-gray-500">Business Location</span><p className="font-medium text-gray-900">{viewExpense.businessLocation || 'N/A'}</p></div>
+              <div><span className="text-sm text-gray-500">Payment Method</span><p className="font-medium text-gray-900">{formatPaymentMethod(viewExpense.paymentMethod)}</p></div>
+              <div><span className="text-sm text-gray-500">Payment Account</span><p className="font-medium text-gray-900">{viewExpense.paymentAccount || 'N/A'}</p></div>
+              <div><span className="text-sm text-gray-500">Expense Contact</span><p className="font-medium text-gray-900">{viewExpense.expenseContact || 'N/A'}</p></div>
+              <div><span className="text-sm text-gray-500">Amount</span><p className="font-semibold text-gray-900">${(Number(viewExpense.amount) || 0).toFixed(2)}</p></div>
+              <div><span className="text-sm text-gray-500">Tax</span><p className="font-semibold text-gray-900">${(Number(viewExpense.taxAmount) || 0).toFixed(2)} ({viewExpense.taxPercent || 0}%)</p></div>
+              <div className="md:col-span-2"><span className="text-sm text-gray-500">Description</span><p className="whitespace-pre-wrap text-gray-900">{viewExpense.description || 'N/A'}</p></div>
+              <div className="md:col-span-2"><span className="text-sm text-gray-500">Additional Notes</span><p className="whitespace-pre-wrap text-gray-900">{viewExpense.additionalNotes || 'N/A'}</p></div>
+            </div>
+
+            <div className="mt-6 border-t pt-5">
+              <h3 className="mb-3 font-semibold text-gray-900">Attached Document</h3>
+              {!viewExpense.documentUrl ? (
+                <p className="text-sm text-gray-500">No document attached.</p>
+              ) : getDocumentType(viewExpense.documentUrl) === 'image' ? (
+                <img src={viewExpense.documentUrl} alt="Expense attachment" className="max-h-[32rem] max-w-full rounded border object-contain" />
+              ) : getDocumentType(viewExpense.documentUrl) === 'pdf' ? (
+                <iframe src={viewExpense.documentUrl} title="Expense PDF attachment" className="h-[32rem] w-full rounded border" />
+              ) : (
+                <a href={viewExpense.documentUrl} target="_blank" rel="noreferrer" className="text-teal-700 underline">Open attached document</a>
+              )}
+              {viewExpense.documentUrl && !viewExpense.documentUrl.startsWith('data:') && (
+                <p className="mt-2 break-all text-xs text-gray-500">{viewExpense.documentUrl}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

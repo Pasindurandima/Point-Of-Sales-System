@@ -8,6 +8,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -43,9 +44,8 @@ public class Expense extends BaseEntity {
     @Column(nullable = false)
     private String businessLocation;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ExpenseCategory category;
+    private String category;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -68,15 +68,13 @@ public class Expense extends BaseEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String documentUrl;
 
     @Builder.Default
     @Column(nullable = false)
     private Boolean isActive = true;
-
-    public enum ExpenseCategory {
-        OFFICE_SUPPLIES, UTILITIES, SALARIES, RENT, MAINTENANCE, MARKETING, TRANSPORTATION, INSURANCE, OTHER
-    }
 
     public enum PaymentMethod {
         CASH, BANK_TRANSFER, CREDIT_CARD, DEBIT_CARD, CHECK, ONLINE_PAYMENT

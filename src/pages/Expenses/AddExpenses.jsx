@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { expenseService } from '../../services/apiService';
 import BusinessLocationSelect from '../../components/BusinessLocationSelect';
+import ExpenseCategorySelect from '../../components/ExpenseCategorySelect';
 
 const AddExpenses = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editExpense = location.state?.editExpense;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -22,6 +26,25 @@ const AddExpenses = () => {
     additionalNotes: '',
     documentUrl: ''
   });
+
+  useEffect(() => {
+    if (editExpense) {
+      setFormData({
+        title: editExpense.title || '',
+        description: editExpense.description || '',
+        amount: editExpense.amount || '',
+        expenseDate: editExpense.expenseDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+        businessLocation: editExpense.businessLocation || '',
+        category: editExpense.category || '',
+        paymentMethod: editExpense.paymentMethod || '',
+        paymentAccount: editExpense.paymentAccount || '',
+        taxPercent: editExpense.taxPercent || 0,
+        expenseContact: editExpense.expenseContact || '',
+        additionalNotes: editExpense.additionalNotes || '',
+        documentUrl: editExpense.documentUrl || '',
+      });
+    }
+  }, [editExpense]);
 
   const calculateTax = (amount, taxPercent) => {
     return ((parseFloat(amount) || 0) * (parseFloat(taxPercent) || 0)) / 100;
@@ -49,16 +72,22 @@ const AddExpenses = () => {
     }));
   };
 
-  const handleFileChange = async (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // In a real application, you would upload the file to a server
-      // For now, we'll just store the filename
-      setFormData(prev => ({
-        ...prev,
-        documentUrl: file.name
-      }));
+    if (!file) return;
+    if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+      setError('Only PDF, JPG, and PNG documents are supported');
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('The attached document must be smaller than 5 MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => setFormData((prev) => ({ ...prev, documentUrl: reader.result }));
+    reader.onerror = () => setError('Failed to read the attached document');
+    reader.readAsDataURL(file);
   };
 
   const validateForm = () => {
@@ -121,7 +150,11 @@ const AddExpenses = () => {
         documentUrl: formData.documentUrl || null
       };
 
-      await expenseService.create(expenseData);
+      if (editExpense) {
+        await expenseService.update(editExpense.id, expenseData);
+      } else {
+        await expenseService.create(expenseData);
+      }
       navigate('/expenses/list');
     } catch (err) {
       console.error('Error creating expense:', err);
@@ -138,7 +171,7 @@ const AddExpenses = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Add Expense</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{editExpense ? 'Edit Expense' : 'Add Expense'}</h1>
         <p className="text-gray-600 mt-2">Record a new expense transaction</p>
       </div>
       
@@ -187,24 +220,7 @@ const AddExpenses = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Expense Category *</label>
-              <select 
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              >
-                <option value="">Select Category</option>
-                <option value="OFFICE_SUPPLIES">Office Supplies</option>
-                <option value="UTILITIES">Utilities</option>
-                <option value="SALARIES">Salaries</option>
-                <option value="RENT">Rent</option>
-                <option value="MARKETING">Marketing</option>
-                <option value="TRANSPORTATION">Transportation</option>
-                <option value="MAINTENANCE">Maintenance</option>
-                <option value="INSURANCE">Insurance</option>
-                <option value="OTHER">Other</option>
-              </select>
+              <ExpenseCategorySelect value={formData.category} onChange={handleInputChange} required />
             </div>
             
             <div>
@@ -272,17 +288,13 @@ const AddExpenses = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Payment Account</label>
-              <select 
+              <input
                 name="paymentAccount"
                 value={formData.paymentAccount}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="">Select Account</option>
-                <option value="Main Account">Main Account</option>
-                <option value="Business Account">Business Account</option>
-                <option value="Cash Register">Cash Register</option>
-              </select>
+                placeholder="Enter payment account"
+              />
             </div>
             
             <div>
@@ -361,7 +373,7 @@ const AddExpenses = () => {
               disabled={loading}
               className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {loading ? 'Saving...' : 'Save Expense'}
+              {loading ? 'Saving...' : editExpense ? 'Update Expense' : 'Save Expense'}
             </button>
             <button 
               type="button" 
