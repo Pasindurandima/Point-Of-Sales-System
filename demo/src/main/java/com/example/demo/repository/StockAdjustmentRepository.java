@@ -1,13 +1,15 @@
 package com.example.demo.repository;
 
-import com.example.demo.entity.StockAdjustment;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.example.demo.entity.StockAdjustment;
 
 @Repository
 public interface StockAdjustmentRepository extends JpaRepository<StockAdjustment, Long> {
@@ -16,7 +18,8 @@ public interface StockAdjustmentRepository extends JpaRepository<StockAdjustment
     
     Optional<StockAdjustment> findByReferenceNumber(String referenceNumber);
     
-    List<StockAdjustment> findByLocation(String location);
+    @Query("SELECT sa FROM StockAdjustment sa WHERE sa.location = :location AND sa.isActive = true ORDER BY sa.adjustmentDate DESC")
+    List<StockAdjustment> findByLocation(@Param("location") String location);
     
     List<StockAdjustment> findByAdjustmentDateBetween(LocalDateTime startDate, LocalDateTime endDate);
     

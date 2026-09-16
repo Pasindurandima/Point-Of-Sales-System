@@ -611,6 +611,34 @@ export const unitService = {
   },
 };
 
+// Business Location Services
+export const businessLocationService = {
+  getAll: async () => {
+    const response = await api.get('/business-locations');
+    return response?.data?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/business-locations/${id}`);
+    return response?.data?.data;
+  },
+
+  create: async (locationData) => {
+    const response = await api.post('/business-locations', locationData);
+    return response?.data?.data;
+  },
+
+  update: async (id, locationData) => {
+    const response = await api.put(`/business-locations/${id}`, locationData);
+    return response?.data?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/business-locations/${id}`);
+    return response?.data;
+  },
+};
+
 // Stock Adjustment Services
 export const stockAdjustmentService = {
   getAll: async (location = null) => {

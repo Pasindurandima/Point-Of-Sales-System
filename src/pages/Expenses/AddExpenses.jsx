@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { expenseService } from '../../services/apiService';
+import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 
 const AddExpenses = () => {
   const navigate = useNavigate();
@@ -174,18 +175,12 @@ const AddExpenses = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Business Location *</label>
-              <select 
+              <BusinessLocationSelect
                 name="businessLocation"
                 value={formData.businessLocation}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
-              >
-                <option value="">Select Location</option>
-                <option value="Main Office">Main Office</option>
-                <option value="Branch Store">Branch Store</option>
-                <option value="Warehouse">Warehouse</option>
-              </select>
+              />
             </div>
           </div>
 

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Plus, Trash2, Check } from 'lucide-react';
 import { productService } from '../../services/apiService';
 import { stockAdjustmentService } from '../../services/apiService';
+import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 
 const AddStockAdjustments = () => {
   const navigate = useNavigate();
@@ -180,7 +181,7 @@ const AddStockAdjustments = () => {
 
       setTimeout(() => {
         setShowSuccess(false);
-        navigate('/stock-adjustments/list');
+        navigate('/stock-adjustment/list');
       }, 2000);
 
     } catch (error) {
@@ -192,7 +193,7 @@ const AddStockAdjustments = () => {
   };
 
   const handleCancel = () => {
-    navigate('/stock-adjustments/list');
+    navigate('/stock-adjustment/list');
   };
 
   const { totalItems, totalAmount } = calculateTotals();
@@ -241,18 +242,12 @@ const AddStockAdjustments = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Business Location *</label>
-              <select 
+              <BusinessLocationSelect
                 name="location"
                 value={formData.location}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
-              >
-                <option value="">Select Location</option>
-                <option value="Main Warehouse">Main Warehouse</option>
-                <option value="Branch Store">Branch Store</option>
-                <option value="Factory">Factory</option>
-              </select>
+              />
             </div>
           </div>
 
@@ -391,7 +386,7 @@ const AddStockAdjustments = () => {
                             />
                           </td>
                           <td className="px-4 py-2 text-sm font-medium">
-                            ${item.subtotal.toFixed(2)}
+                            ${(Number(item.subtotal) || 0).toFixed(2)}
                           </td>
                           <td className="px-4 py-2">
                             <button

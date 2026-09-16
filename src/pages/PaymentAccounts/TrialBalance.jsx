@@ -1,4 +1,5 @@
 import React from 'react';
+import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 
 const TrialBalance = () => {
   return (
@@ -21,11 +22,10 @@ const TrialBalance = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               placeholder="To Date"
             />
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>All Locations</option>
-              <option>Main Office</option>
-              <option>Branch Store</option>
-            </select>
+            <BusinessLocationSelect
+              allLabel="All Locations"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
           </div>
           <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
             Export Report

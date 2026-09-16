@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Plus, Trash2 } from 'lucide-react';
 import { productService, stockTransferService } from '../../services/apiService';
+import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 
 const emptyForm = {
   transferDate: new Date().toISOString().split('T')[0],
@@ -218,32 +219,22 @@ const AddStockTransfers = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">From Location *</label>
-              <select
+              <BusinessLocationSelect
                 value={formData.fromLocation}
                 onChange={(e) => setFormData({ ...formData, fromLocation: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
-              >
-                <option value="">Select Source Location</option>
-                <option value="Main Warehouse">Main Warehouse</option>
-                <option value="Branch Store">Branch Store</option>
-                <option value="Factory">Factory</option>
-              </select>
+                allLabel="Select Source Location"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">To Location *</label>
-              <select
+              <BusinessLocationSelect
                 value={formData.toLocation}
                 onChange={(e) => setFormData({ ...formData, toLocation: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
-              >
-                <option value="">Select Destination Location</option>
-                <option value="Main Warehouse">Main Warehouse</option>
-                <option value="Branch Store">Branch Store</option>
-                <option value="Factory">Factory</option>
-              </select>
+                allLabel="Select Destination Location"
+              />
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { stockAdjustmentService } from '../../services/apiService';
+import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 
 const ListStockAdjustments = () => {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ const ListStockAdjustments = () => {
   const [adjustments, setAdjustments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [locationFilter, setLocationFilter] = useState('All Locations');
+  const [locationFilter, setLocationFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -31,7 +32,7 @@ const ListStockAdjustments = () => {
   };
 
   const handleAdd = () => {
-    navigate('/stock-adjustments/add');
+    navigate('/stock-adjustment/add');
   };
 
   const handleView = (adjustment) => {
@@ -39,7 +40,7 @@ const ListStockAdjustments = () => {
   };
 
   const handleEdit = (adjustment) => {
-    navigate('/stock-adjustments/add', { state: { editAdjustment: adjustment } });
+    navigate('/stock-adjustment/add', { state: { editAdjustment: adjustment } });
   };
 
   const handleDelete = async (id) => {
@@ -59,7 +60,7 @@ const ListStockAdjustments = () => {
         (a.reason || '').toLowerCase().includes(search.toLowerCase())
       : true;
 
-    const matchesLocation = locationFilter && locationFilter !== 'All Locations'
+    const matchesLocation = locationFilter
       ? a.location === locationFilter
       : true;
 
@@ -72,6 +73,8 @@ const ListStockAdjustments = () => {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pageData = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const showingFrom = filtered.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const showingTo = Math.min(filtered.length, page * pageSize);
 
   const computeNet = (adjustment) => {
     if (!adjustment.items) return 0;
@@ -107,16 +110,12 @@ const ListStockAdjustments = () => {
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
-            <select
+            <BusinessLocationSelect
+              allLabel="All Locations"
               value={locationFilter}
               onChange={(e) => { setLocationFilter(e.target.value); setPage(1); }}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option>All Locations</option>
-              <option>Main Warehouse</option>
-              <option>Branch Store</option>
-              <option>Factory</option>
-            </select>
+            />
             <input
               type="date"
               value={dateFilter}
@@ -160,7 +159,7 @@ const ListStockAdjustments = () => {
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Increase</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(adj.totalAmount || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(Number(adj.totalAmount) || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{adj.reason?.replaceAll('_', ' ')}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button onClick={() => handleView(adj)} className="text-teal-600 hover:text-teal-900 mr-2">View</button>
@@ -175,7 +174,7 @@ const ListStockAdjustments = () => {
         </div>
 
         <div className="mt-4 flex justify-between items-center">
-          <div className="text-sm text-gray-600">Showing {Math.min(filtered.length, (page - 1) * pageSize + 1)} to {Math.min(filtered.length, page * pageSize)} of {filtered.length} results</div>
+          <div className="text-sm text-gray-600">Showing {showingFrom} to {showingTo} of {filtered.length} results</div>
           <div className="flex gap-2 items-center">
             <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">Previous</button>
             <div className="px-3 py-1 border border-gray-300 rounded-lg">{page} / {totalPages}</div>
@@ -219,8 +218,8 @@ const ListStockAdjustments = () => {
                       <td className="px-4 py-2">{it.currentStock}</td>
                       <td className="px-4 py-2">{it.adjustmentType}</td>
                       <td className="px-4 py-2">{it.quantity}</td>
-                      <td className="px-4 py-2">${(it.unitCost || 0).toFixed(2)}</td>
-                      <td className="px-4 py-2">${(it.subtotal || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2">${(Number(it.unitCost) || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2">${(Number(it.subtotal) || 0).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -234,7 +233,7 @@ const ListStockAdjustments = () => {
                   </div>
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total Amount:</span>
-                    <span className="text-teal-600">${(viewItem.totalAmount || 0).toFixed(2)}</span>
+                    <span className="text-teal-600">${(Number(viewItem.totalAmount) || 0).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

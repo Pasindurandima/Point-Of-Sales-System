@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Truck, Calendar, MapPin, FileText, Package, Plus, Trash2, Upload, DollarSign, CreditCard } from 'lucide-react';
 import { supplierService, purchaseService, productService } from '../../services/apiService';
+import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 
 const AddPurchase = () => {
   const navigate = useNavigate();
@@ -375,17 +376,12 @@ const AddPurchase = () => {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Business Location <span className="text-red-500">*</span>
               </label>
-              <select
+              <BusinessLocationSelect
                 name="businessLocation"
                 value={formData.businessLocation}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
-              >
-                <option value="">Select Location</option>
-                <option value="location1">Main Store</option>
-                <option value="location2">Warehouse</option>
-              </select>
+              />
             </div>
 
             {/* Pay Term */}

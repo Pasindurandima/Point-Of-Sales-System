@@ -1,4 +1,5 @@
 import React from 'react';
+import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 
 const ReceiptPrinters = () => {
   return (
@@ -48,11 +49,7 @@ const ReceiptPrinters = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Business Location</label>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                <option>Main Office</option>
-                <option>Branch Store</option>
-                <option>Warehouse</option>
-              </select>
+              <BusinessLocationSelect />
             </div>
             <button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
               Add Printer
