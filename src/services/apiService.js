@@ -634,6 +634,15 @@ export const unitService = {
   },
 };
 
+// Payment Account and Financial Report Services
+export const paymentAccountService = {
+  getAll: async () => (await api.get('/payment-accounts')).data?.data || [],
+  create: async (data) => (await api.post('/payment-accounts', data)).data?.data,
+  update: async (id, data) => (await api.put(`/payment-accounts/${id}`, data)).data?.data,
+  delete: async (id) => (await api.delete(`/payment-accounts/${id}`)).data,
+  getReport: async (params = {}) => (await api.get('/payment-accounts/report', { params })).data?.data,
+};
+
 // Business Location Services
 export const businessLocationService = {
   getAll: async () => {

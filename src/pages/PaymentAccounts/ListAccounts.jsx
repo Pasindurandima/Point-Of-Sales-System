@@ -1,139 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import BusinessLocationSelect from '../../components/BusinessLocationSelect';
+import { paymentAccountService } from '../../services/apiService';
 
-const ListAccounts = () => {
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Payment Accounts</h1>
-        <p className="text-gray-600 mt-2">Manage all payment accounts and balances</p>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Search accounts..."
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>All Types</option>
-              <option>Bank Account</option>
-              <option>Cash</option>
-              <option>Credit Card</option>
-              <option>Mobile Wallet</option>
-            </select>
-          </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
-            Add Account
-          </button>
-        </div>
+const emptyForm = { name: '', accountNumber: '', type: 'BANK', provider: '', businessLocation: '', openingBalance: '0' };
+const money = (value) => `$${(Number(value) || 0).toFixed(2)}`;
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white p-6 rounded-lg shadow-md">
-            <div className="text-sm opacity-90 mb-2">Total Balance</div>
-            <div className="text-3xl font-bold">$45,850.00</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-md">
-            <div className="text-sm opacity-90 mb-2">Bank Accounts</div>
-            <div className="text-3xl font-bold">$38,500.00</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-md">
-            <div className="text-sm opacity-90 mb-2">Cash on Hand</div>
-            <div className="text-3xl font-bold">$7,350.00</div>
-          </div>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Number</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank/Provider</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Business Account</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">****5678</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Bank Account</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">ABC Bank</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$25,500.00</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    Active
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-teal-600 hover:text-teal-900 mr-2">View</button>
-                  <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Savings Account</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">****1234</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Bank Account</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">XYZ Bank</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$13,000.00</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    Active
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-teal-600 hover:text-teal-900 mr-2">View</button>
-                  <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Cash Register</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Cash</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Main Store</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$5,850.00</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    Active
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-teal-600 hover:text-teal-900 mr-2">View</button>
-                  <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Petty Cash</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Cash</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Office</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$1,500.00</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    Active
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-teal-600 hover:text-teal-900 mr-2">View</button>
-                  <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
-                  <button className="text-red-600 hover:text-red-900">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
+export default function ListAccounts() {
+  const [accounts, setAccounts] = useState([]);
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
+  const [search, setSearch] = useState('');
+  const [type, setType] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-export default ListAccounts;
+  const load = async () => { setLoading(true); try { setAccounts(await paymentAccountService.getAll()); } catch (e) { setError(e.response?.data?.message || 'Failed to load payment accounts'); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, []);
+  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const save = async (e) => { e.preventDefault(); setError(''); try { const saved = editingId ? await paymentAccountService.update(editingId, form) : await paymentAccountService.create(form); setAccounts(editingId ? accounts.map((a) => a.id === editingId ? saved : a) : [...accounts, saved]); setForm(emptyForm); setEditingId(null); } catch (err) { setError(err.response?.data?.message || 'Failed to save account'); } };
+  const remove = async (account) => { if (!window.confirm(`Delete ${account.name}?`)) return; try { await paymentAccountService.delete(account.id); setAccounts(accounts.filter((a) => a.id !== account.id)); } catch (err) { setError(err.response?.data?.message || 'Failed to delete account'); } };
+  const filtered = accounts.filter((a) => (!search || `${a.name} ${a.provider || ''}`.toLowerCase().includes(search.toLowerCase())) && (!type || a.type === type));
+  const total = accounts.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  const bank = accounts.filter((a) => a.type === 'BANK').reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  const cash = accounts.filter((a) => a.type === 'CASH').reduce((sum, a) => sum + Number(a.balance || 0), 0);
+
+  return <div className="p-6"><div className="mb-6"><h1 className="text-2xl font-bold text-gray-800">Payment Accounts</h1><p className="mt-2 text-gray-600">Manage real payment accounts and calculated balances</p></div>{error && <div className="mb-4 rounded bg-red-50 p-3 text-red-700">{error}</div>}
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-6"><div className="rounded-lg bg-teal-600 p-5 text-white"><div>Total Balance</div><div className="text-3xl font-bold">{money(total)}</div></div><div className="rounded-lg bg-blue-600 p-5 text-white"><div>Bank Accounts</div><div className="text-3xl font-bold">{money(bank)}</div></div><div className="rounded-lg bg-green-600 p-5 text-white"><div>Cash on Hand</div><div className="text-3xl font-bold">{money(cash)}</div></div></div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]"><form onSubmit={save} className="rounded-lg bg-white p-5 shadow"><h2 className="mb-4 text-lg font-semibold">{editingId ? 'Edit Account' : 'Add Account'}</h2>{['name','accountNumber','provider'].map((name) => <input key={name} name={name} value={form[name]} onChange={change} required={name === 'name'} placeholder={name === 'name' ? 'Account name *' : name === 'accountNumber' ? 'Account number' : 'Bank / provider'} className="mb-3 w-full rounded border px-3 py-2" />)}<select name="type" value={form.type} onChange={change} className="mb-3 w-full rounded border px-3 py-2"><option value="BANK">Bank Account</option><option value="CASH">Cash</option><option value="CREDIT_CARD">Credit Card</option><option value="MOBILE_WALLET">Mobile Wallet</option><option value="OTHER">Other</option></select><BusinessLocationSelect name="businessLocation" value={form.businessLocation} onChange={change} allLabel="No location" className="mb-3 w-full rounded border px-3 py-2" /><input name="openingBalance" type="number" min="0" step="0.01" value={form.openingBalance} onChange={change} placeholder="Opening balance" className="mb-3 w-full rounded border px-3 py-2" /><div className="flex gap-2"><button className="flex-1 rounded bg-teal-600 px-3 py-2 text-white">{editingId ? 'Update' : 'Add Account'}</button>{editingId && <button type="button" onClick={() => { setEditingId(null); setForm(emptyForm); }} className="rounded bg-gray-200 px-3 py-2">Cancel</button>}</div></form>
+      <div className="overflow-x-auto rounded-lg bg-white p-5 shadow"><div className="mb-4 flex gap-2"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search accounts..." className="rounded border px-3 py-2" /><select value={type} onChange={(e) => setType(e.target.value)} className="rounded border px-3 py-2"><option value="">All Types</option><option value="BANK">Bank</option><option value="CASH">Cash</option><option value="CREDIT_CARD">Credit Card</option><option value="MOBILE_WALLET">Mobile Wallet</option><option value="OTHER">Other</option></select></div><table className="min-w-full divide-y"><thead><tr>{['Account','Number','Type','Provider','Balance','Actions'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs uppercase text-gray-500">{h}</th>)}</tr></thead><tbody>{loading ? <tr><td colSpan="6" className="p-6 text-center">Loading...</td></tr> : filtered.length === 0 ? <tr><td colSpan="6" className="p-6 text-center text-gray-500">No payment accounts found</td></tr> : filtered.map((a) => <tr key={a.id}><td className="px-4 py-3 font-medium">{a.name}</td><td className="px-4 py-3">{a.accountNumber || '-'}</td><td className="px-4 py-3">{a.type}</td><td className="px-4 py-3">{a.provider || '-'}</td><td className="px-4 py-3 font-semibold">{money(a.balance)}</td><td className="px-4 py-3"><button onClick={() => { setEditingId(a.id); setForm({ name: a.name, accountNumber: a.accountNumber || '', type: a.type, provider: a.provider || '', businessLocation: a.businessLocation || '', openingBalance: a.openingBalance || 0 }); }} className="mr-2 text-blue-600">Edit</button><button onClick={() => remove(a)} className="text-red-600">Delete</button></td></tr>)}</tbody></table></div></div>
+  </div>;
+}
