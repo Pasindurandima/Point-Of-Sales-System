@@ -50,6 +50,8 @@ public class SecurityConfig {
                       .requestMatchers("/customers/**").hasAuthority("PERMISSION_CUSTOMERS")
                       .requestMatchers("/suppliers/**").hasAuthority("PERMISSION_SUPPLIERS")
                       .requestMatchers("/sales/**").hasAuthority("PERMISSION_SALES")
+                      .requestMatchers("/sale-returns/**").hasAuthority("PERMISSION_SALES")
+                      .requestMatchers("/shipments/**").hasAuthority("PERMISSION_SALES")
                       .requestMatchers("/purchases/**").hasAuthority("PERMISSION_PURCHASES")
                       .requestMatchers("/purchase-returns/**").hasAuthority("PERMISSION_PURCHASES")
                       .requestMatchers("/expenses/**").hasAuthority("PERMISSION_EXPENSES")

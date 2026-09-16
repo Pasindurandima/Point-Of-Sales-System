@@ -59,7 +59,6 @@ import AddQuotation from '../pages/Sell/AddQuotation';
 import ListQuotations from '../pages/Sell/ListQuotations';
 import ListSellReturn from '../pages/Sell/ListSellReturn';
 import Shipments from '../pages/Sell/Shipments';
-import Discounts from '../pages/Sell/Discounts';
 import ImportSales from '../pages/Sell/ImportSales';
 
 // Stock Transfers
@@ -164,9 +163,8 @@ export default function AppRoutes() {
         <Route path="/sell/pos" element={<POS />} />
         <Route path="/sell/add-quotation" element={<AddQuotation />} />
         <Route path="/sell/list-quotations" element={<ListQuotations />} />
-        <Route path="/sell/list-sell-return" element={<ListSellReturn />} />
+        <Route path="/sell/list-return" element={<ListSellReturn />} />
         <Route path="/sell/shipments" element={<Shipments />} />
-        <Route path="/sell/discounts" element={<Discounts />} />
         <Route path="/sell/import-sales" element={<ImportSales />} />
         
         {/* Stock Transfers Routes */}

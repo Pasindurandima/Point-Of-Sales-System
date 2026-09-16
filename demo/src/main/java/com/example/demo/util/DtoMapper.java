@@ -14,9 +14,14 @@ import com.example.demo.dto.PurchaseResponse;
 import com.example.demo.dto.PurchaseReturnItemResponse;
 import com.example.demo.dto.PurchaseReturnResponse;
 import com.example.demo.dto.SaleItemResponse;
+import com.example.demo.dto.SaleReturnItemResponse;
+import com.example.demo.dto.SaleReturnResponse;
 import com.example.demo.dto.SaleResponse;
 import com.example.demo.dto.StockAdjustmentResponse;
 import com.example.demo.dto.StockAdjustmentItemResponse;
+import com.example.demo.dto.StockTransferResponse;
+import com.example.demo.dto.StockTransferItemResponse;
+import com.example.demo.dto.ShipmentResponse;
 import com.example.demo.dto.SupplierResponse;
 import com.example.demo.entity.Brand;
 import com.example.demo.entity.Category;
@@ -29,8 +34,13 @@ import com.example.demo.entity.PurchaseReturn;
 import com.example.demo.entity.PurchaseReturnItem;
 import com.example.demo.entity.Sale;
 import com.example.demo.entity.SaleItem;
+import com.example.demo.entity.SaleReturn;
+import com.example.demo.entity.SaleReturnItem;
 import com.example.demo.entity.StockAdjustment;
 import com.example.demo.entity.StockAdjustmentItem;
+import com.example.demo.entity.StockTransfer;
+import com.example.demo.entity.StockTransferItem;
+import com.example.demo.entity.Shipment;
 import com.example.demo.entity.Supplier;
 
 @Component
@@ -160,6 +170,34 @@ public class DtoMapper {
                 .total(item.getTotal())
                 .build();
     }
+
+        public SaleReturnResponse toSaleReturnResponse(SaleReturn saleReturn) {
+                return SaleReturnResponse.builder()
+                                .id(saleReturn.getId())
+                                .returnNumber(saleReturn.getReturnNumber())
+                                .saleInvoice(saleReturn.getSaleInvoice())
+                                .customer(saleReturn.getCustomer())
+                                .returnDate(saleReturn.getReturnDate())
+                                .returnReason(saleReturn.getReturnReason())
+                                .refundType(saleReturn.getRefundType())
+                                .notes(saleReturn.getNotes())
+                                .total(saleReturn.getTotal())
+                                .items(saleReturn.getItems().stream().map(this::toSaleReturnItemResponse).collect(Collectors.toList()))
+                                .createdAt(saleReturn.getCreatedAt())
+                                .updatedAt(saleReturn.getUpdatedAt())
+                                .build();
+        }
+
+        public SaleReturnItemResponse toSaleReturnItemResponse(SaleReturnItem item) {
+                return SaleReturnItemResponse.builder()
+                                .id(item.getId())
+                                .product(toProductResponse(item.getProduct()))
+                                .soldQty(item.getSoldQty())
+                                .returnQty(item.getReturnQty())
+                                .unitPrice(item.getUnitPrice())
+                                .subtotal(item.getSubtotal())
+                                .build();
+        }
 
     // Purchase mappings
     public PurchaseResponse toPurchaseResponse(Purchase purchase) {
@@ -301,4 +339,58 @@ public class DtoMapper {
                 .subtotal(item.getSubtotal())
                 .build();
     }
+
+    public StockTransferResponse toStockTransferResponse(StockTransfer transfer) {
+        return StockTransferResponse.builder()
+                .id(transfer.getId())
+                .transferNumber(transfer.getTransferNumber())
+                .transferDate(transfer.getTransferDate())
+                .fromLocation(transfer.getFromLocation())
+                .toLocation(transfer.getToLocation())
+                .status(transfer.getStatus() != null ? transfer.getStatus().name() : null)
+                .items(transfer.getItems().stream()
+                        .map(this::toStockTransferItemResponse)
+                        .collect(Collectors.toList()))
+                .totalAmount(transfer.getTotalAmount())
+                .totalQuantity(transfer.getTotalQuantity())
+                .userName(transfer.getUser() != null ? transfer.getUser().getUsername() : null)
+                .userId(transfer.getUser() != null ? transfer.getUser().getId() : null)
+                .notes(transfer.getNotes())
+                .createdAt(transfer.getCreatedAt())
+                .updatedAt(transfer.getUpdatedAt())
+                .build();
+    }
+
+    public StockTransferItemResponse toStockTransferItemResponse(StockTransferItem item) {
+        return StockTransferItemResponse.builder()
+                .id(item.getId())
+                .product(toProductResponse(item.getProduct()))
+                .currentStock(item.getCurrentStock())
+                .quantity(item.getQuantity())
+                .unitCost(item.getUnitCost())
+                .subtotal(item.getSubtotal())
+                .createdAt(item.getCreatedAt())
+                .updatedAt(item.getUpdatedAt())
+                .build();
+    }
+
+        public ShipmentResponse toShipmentResponse(Shipment shipment) {
+                return ShipmentResponse.builder()
+                                .id(shipment.getId())
+                                .shipmentNumber(shipment.getShipmentNumber())
+                                .invoiceNumber(shipment.getInvoiceNumber())
+                                .customer(shipment.getCustomer())
+                                .carrier(shipment.getCarrier())
+                                .trackingNumber(shipment.getTrackingNumber())
+                                .shipmentDate(shipment.getShipmentDate())
+                                .expectedDelivery(shipment.getExpectedDelivery())
+                                .shippingAddress(shipment.getShippingAddress())
+                                .shippingCost(shipment.getShippingCost())
+                                .itemCount(shipment.getItemCount())
+                                .status(shipment.getStatus().name())
+                                .notes(shipment.getNotes())
+                                .createdAt(shipment.getCreatedAt())
+                                .updatedAt(shipment.getUpdatedAt())
+                                .build();
+        }
 }

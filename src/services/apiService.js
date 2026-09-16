@@ -141,6 +141,57 @@ export const saleService = {
   },
 };
 
+// Sale Return Services
+export const saleReturnService = {
+  getAll: async () => {
+    const response = await api.get('/sale-returns');
+    return response?.data?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/sale-returns/${id}`);
+    return response?.data?.data;
+  },
+
+  create: async (returnData) => {
+    const response = await api.post('/sale-returns', returnData);
+    return response?.data?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/sale-returns/${id}`);
+    return response?.data;
+  },
+};
+
+// Shipment Services
+export const shipmentService = {
+  getAll: async () => {
+    const response = await api.get('/shipments');
+    return response?.data?.data || [];
+  },
+  getById: async (id) => {
+    const response = await api.get(`/shipments/${id}`);
+    return response?.data?.data;
+  },
+  create: async (shipmentData) => {
+    const response = await api.post('/shipments', shipmentData);
+    return response?.data?.data;
+  },
+  update: async (id, shipmentData) => {
+    const response = await api.put(`/shipments/${id}`, shipmentData);
+    return response?.data?.data;
+  },
+  updateStatus: async (id, status) => {
+    const response = await api.put(`/shipments/${id}/status`, { status });
+    return response?.data?.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/shipments/${id}`);
+    return response?.data;
+  },
+};
+
 // Draft Services (Drafts are sales with status = DRAFT)
 export const draftService = {
   getAll: async () => {
@@ -591,6 +642,34 @@ export const stockAdjustmentService = {
   getByLocation: async (location) => {
     const response = await api.get(`/stock-adjustments?location=${location}`);
     return response?.data?.data || [];
+  },
+};
+
+// Stock Transfer Services
+export const stockTransferService = {
+  getAll: async () => {
+    const response = await api.get('/stock-transfers');
+    return response?.data?.data || [];
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/stock-transfers/${id}`);
+    return response?.data?.data;
+  },
+
+  create: async (transferData) => {
+    const response = await api.post('/stock-transfers', transferData);
+    return response?.data;
+  },
+
+  update: async (id, transferData) => {
+    const response = await api.put(`/stock-transfers/${id}`, transferData);
+    return response?.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/stock-transfers/${id}`);
+    return response?.data;
   },
 };
 

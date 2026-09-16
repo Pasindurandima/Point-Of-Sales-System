@@ -76,7 +76,6 @@ const menuItems = [
       { name: 'List Quotations', path: '/sell/list-quotations' },
       { name: 'List Sell Return', path: '/sell/list-return' },
       { name: 'Shipments', path: '/sell/shipments' },
-      { name: 'Discounts', path: '/sell/discounts' },
       { name: 'Import Sales', path: '/sell/import-sales' },
     ]
   },
