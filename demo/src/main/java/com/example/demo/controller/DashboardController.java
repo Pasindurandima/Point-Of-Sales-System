@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.ApiResponse;
+import com.example.demo.dto.DashboardOverview;
 import com.example.demo.dto.DashboardStats;
 import com.example.demo.dto.EssentialsOverview;
 import com.example.demo.service.DashboardService;
@@ -30,5 +31,10 @@ public class DashboardController {
     @GetMapping("/essentials")
     public ResponseEntity<ApiResponse<EssentialsOverview>> getEssentialsOverview() {
         return ResponseEntity.ok(ApiResponse.success("Essentials overview retrieved successfully", dashboardService.getEssentialsOverview()));
+    }
+
+    @GetMapping("/overview")
+    public ResponseEntity<ApiResponse<DashboardOverview>> getDashboardOverview() {
+        return ResponseEntity.ok(ApiResponse.success("Dashboard overview retrieved successfully", dashboardService.getDashboardOverview()));
     }
 }

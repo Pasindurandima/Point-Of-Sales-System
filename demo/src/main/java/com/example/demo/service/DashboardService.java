@@ -10,15 +10,23 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.example.demo.dto.DashboardMonth;
+import com.example.demo.dto.DashboardOverview;
+import com.example.demo.dto.DashboardSale;
 import com.example.demo.dto.DashboardStats;
 import com.example.demo.dto.EssentialsActivity;
 import com.example.demo.dto.EssentialsOverview;
 import com.example.demo.entity.Product;
+import com.example.demo.entity.PurchaseReturn;
+import com.example.demo.entity.Sale;
+import com.example.demo.entity.SaleReturn;
 import com.example.demo.repository.CustomerRepository;
 import com.example.demo.repository.ExpenseRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.repository.PurchaseRepository;
+import com.example.demo.repository.PurchaseReturnRepository;
 import com.example.demo.repository.SaleRepository;
+import com.example.demo.repository.SaleReturnRepository;
 import com.example.demo.repository.StockAdjustmentRepository;
 import com.example.demo.repository.SupplierRepository;
 
@@ -35,6 +43,8 @@ public class DashboardService {
     private final PurchaseRepository purchaseRepository;
     private final ExpenseRepository expenseRepository;
     private final StockAdjustmentRepository stockAdjustmentRepository;
+    private final PurchaseReturnRepository purchaseReturnRepository;
+    private final SaleReturnRepository saleReturnRepository;
 
     public DashboardStats getDashboardStats() {
         LocalDateTime now = LocalDateTime.now();
@@ -97,6 +107,30 @@ public class DashboardService {
                 .monthProfit(monthProfit)
                 .yearProfit(yearProfit)
                 .build();
+    }
+
+    public DashboardOverview getDashboardOverview() {
+        List<Sale> sales = saleRepository.findAllOrderByDateDesc();
+        BigDecimal totalSales = sales.stream().filter(sale -> sale.getStatus() == Sale.SaleStatus.COMPLETED).map(Sale::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalPurchases = purchaseRepository.findAll().stream().map(purchase -> purchase.getTotal()).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalExpenses = expenseRepository.findAll().stream().filter(expense -> Boolean.TRUE.equals(expense.getIsActive())).map(expense -> getSafeValue(expense.getAmount()).add(getSafeValue(expense.getTaxAmount()))).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal invoiceDue = sales.stream().filter(sale -> sale.getStatus() == Sale.SaleStatus.COMPLETED).map(sale -> getSafeValue(sale.getTotal()).subtract(getSafeValue(sale.getPaidAmount())).max(BigDecimal.ZERO)).reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<DashboardMonth> monthlySales = java.util.stream.IntStream.range(0, 12).mapToObj(month -> new DashboardMonth(java.time.Month.of(month + 1).name().substring(0, 3), sales.stream().filter(sale -> sale.getStatus() == Sale.SaleStatus.COMPLETED && sale.getSaleDate() != null && sale.getSaleDate().getYear() == LocalDateTime.now().getYear() && sale.getSaleDate().getMonthValue() == month + 1).map(Sale::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add))).collect(Collectors.toList());
+        List<PurchaseReturn> purchaseReturns = purchaseReturnRepository.findAllByOrderByReturnDateDesc();
+        List<SaleReturn> saleReturns = saleReturnRepository.findAllByOrderByReturnDateDesc();
+        return DashboardOverview.builder()
+                .totalProducts(productRepository.count()).totalCustomers(customerRepository.count()).totalSuppliers(supplierRepository.count())
+                .totalSales(totalSales).totalPurchases(totalPurchases).totalExpenses(totalExpenses).invoiceDue(invoiceDue).netProfit(totalSales.subtract(totalPurchases).subtract(totalExpenses))
+                .totalPurchaseReturns(purchaseReturns.stream().map(PurchaseReturn::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add)).totalPurchaseReturnsPaid(null)
+                .totalSaleReturns(saleReturns.stream().map(SaleReturn::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add)).totalSaleReturnsPaid(null)
+                .monthlySales(monthlySales).recentSales(sales.stream().limit(10).map(this::toDashboardSale).collect(Collectors.toList())).build();
+    }
+
+    private DashboardSale toDashboardSale(Sale sale) {
+        BigDecimal total = getSafeValue(sale.getTotal());
+        BigDecimal paid = getSafeValue(sale.getPaidAmount());
+        String status = paid.compareTo(BigDecimal.ZERO) <= 0 ? "PENDING" : paid.compareTo(total) >= 0 ? "PAID" : "PARTIAL";
+        return new DashboardSale(sale.getId(), sale.getInvoiceNumber(), sale.getSaleDate(), sale.getCustomer() == null ? "Walk-in Customer" : sale.getCustomer().getName(), total, paid, status, sale.getPaymentMethod() == null ? "CASH" : sale.getPaymentMethod().name());
     }
 
             public EssentialsOverview getEssentialsOverview() {

@@ -26,11 +26,8 @@ export default function Navbar() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      // Temporarily disabled - notifications endpoint has issues
-      // const data = await notificationService.getAll();
-      
-      // Use empty array for now
-      setNotifications([]);
+      const data = await notificationService.getAll();
+      setNotifications(data);
     } catch (error) {
       console.error('Error fetching notifications:', error.message);
       setNotifications([]);

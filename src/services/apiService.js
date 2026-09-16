@@ -522,6 +522,10 @@ export const expenseCategoryService = {
 
 // Dashboard Statistics
 export const dashboardService = {
+  getOverview: async () => {
+    const response = await api.get('/dashboard/overview');
+    return response?.data?.data;
+  },
   getEssentialsOverview: async () => {
     const response = await api.get('/dashboard/essentials');
     return response?.data?.data;
@@ -544,6 +548,10 @@ export const dashboardService = {
 
 // Notification Services
 export const notificationService = {
+  getTemplates: async () => (await api.get('/notifications/templates')).data?.data || [],
+  createTemplate: async (data) => (await api.post('/notifications/templates', data)).data?.data,
+  updateTemplate: async (id, data) => (await api.put(`/notifications/templates/${id}`, data)).data?.data,
+  deleteTemplate: async (id) => (await api.delete(`/notifications/templates/${id}`)).data,
   getAll: async () => {
     const response = await api.get('/notifications');
     return response?.data?.data || [];
