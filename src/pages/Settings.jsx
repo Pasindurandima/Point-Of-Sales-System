@@ -22,7 +22,7 @@ export default function Settings() {
     theme: 'light',
     language: 'en',
     dateFormat: 'MM/DD/YYYY',
-    currency: 'USD',
+    currency: 'LKR',
     
     // System Settings
     autoBackup: true,
@@ -395,11 +395,11 @@ export default function Settings() {
                 onChange={(e) => handleChange('display', 'currency', e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
+                <option value="LKR">LKR (Rs)</option>
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
                 <option value="GBP">GBP (£)</option>
                 <option value="JPY">JPY (¥)</option>
-                <option value="LKR">LKR (රු)</option>
               </select>
             </div>
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Eye, Printer, Trash2, Search, ChevronDown, Edit, Truck, FileText, Package, DollarSign, RotateCcw, Link, Bell } from 'lucide-react';
 import { saleService } from '../../services/apiService';
+import { formatCurrency } from '../../context/BusinessSettingsContext';
 
 const AllSales = () => {
   const navigate = useNavigate();
@@ -137,7 +138,7 @@ const AllSales = () => {
   };
 
   const handleViewPayments = (sale) => {
-    alert(`Payment Details:\n\nTotal Amount: Rs ${(sale.totalAmount || 0).toFixed(2)}\nTotal Paid: Rs ${(sale.paidAmount || 0).toFixed(2)}\nDue Amount: Rs ${((sale.totalAmount || 0) - (sale.paidAmount || 0)).toFixed(2)}\nPayment Method: ${sale.paymentMethod || 'CASH'}`);
+    alert(`Payment Details:\n\nTotal Amount: ${formatCurrency(sale.totalAmount)}\nTotal Paid: ${formatCurrency(sale.paidAmount)}\nDue Amount: ${formatCurrency((sale.totalAmount || 0) - (sale.paidAmount || 0))}\nPayment Method: ${sale.paymentMethod || 'CASH'}`);
   };
 
   const handleSellReturn = (sale) => {

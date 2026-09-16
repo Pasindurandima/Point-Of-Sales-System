@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { expenseService } from '../../services/apiService';
 import { expenseCategoryService } from '../../services/apiService';
+import { formatCurrency, formatDate } from '../../context/BusinessSettingsContext';
 
 const ListExpenses = () => {
   const navigate = useNavigate();
@@ -49,12 +50,6 @@ const ListExpenses = () => {
         alert('Failed to delete expense');
       }
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
   };
 
   const formatCategory = (category) => {
@@ -214,13 +209,13 @@ const ListExpenses = () => {
                           {formatPaymentMethod(expense.paymentMethod)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          ${amount.toFixed(2)}
+                          {formatCurrency(amount)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          ${tax.toFixed(2)}
+                          {formatCurrency(tax)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-teal-600">
-                          ${total.toFixed(2)}
+                          {formatCurrency(total)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button

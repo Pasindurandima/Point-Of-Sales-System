@@ -1,129 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import BusinessLocationSelect from '../../components/BusinessLocationSelect';
+import { businessLocationService, settingsService } from '../../services/apiService';
 
-const ReceiptPrinters = () => {
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Receipt Printers</h1>
-        <p className="text-gray-600 mt-2">Configure receipt printers for POS system</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Add New Printer</h2>
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Printer Name *</label>
-              <input type="text" placeholder="e.g., Main Counter Printer" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Printer Type</label>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                <option>Thermal Printer</option>
-                <option>Dot Matrix</option>
-                <option>Laser Printer</option>
-                <option>Inkjet Printer</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Connection Type</label>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                <option>USB</option>
-                <option>Network (IP Address)</option>
-                <option>Bluetooth</option>
-                <option>Serial Port</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">IP Address / Port</label>
-              <input type="text" placeholder="192.168.1.100 or COM3" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Paper Width</label>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                <option>58mm</option>
-                <option>80mm</option>
-                <option>110mm</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Business Location</label>
-              <BusinessLocationSelect />
-            </div>
-            <button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors">
-              Add Printer
-            </button>
-          </form>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Configured Printers</h2>
-          <div className="space-y-3">
-            <div className="p-4 border border-gray-200 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold text-gray-900">Main Counter Printer</h3>
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Online</span>
-                </div>
-                <div className="flex gap-2">
-                  <button className="text-blue-600 hover:text-blue-900 text-sm">Test</button>
-                  <button className="text-gray-600 hover:text-gray-900 text-sm">Edit</button>
-                  <button className="text-red-600 hover:text-red-900 text-sm">Delete</button>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>Type: Thermal Printer</p>
-                <p>Connection: Network (192.168.1.100)</p>
-                <p>Paper: 80mm</p>
-                <p>Location: Main Office</p>
-              </div>
-            </div>
-
-            <div className="p-4 border border-gray-200 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold text-gray-900">Branch Printer</h3>
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Online</span>
-                </div>
-                <div className="flex gap-2">
-                  <button className="text-blue-600 hover:text-blue-900 text-sm">Test</button>
-                  <button className="text-gray-600 hover:text-gray-900 text-sm">Edit</button>
-                  <button className="text-red-600 hover:text-red-900 text-sm">Delete</button>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>Type: Thermal Printer</p>
-                <p>Connection: USB</p>
-                <p>Paper: 80mm</p>
-                <p>Location: Branch Store</p>
-              </div>
-            </div>
-
-            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold text-gray-900">Kitchen Printer</h3>
-                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Offline</span>
-                </div>
-                <div className="flex gap-2">
-                  <button className="text-blue-600 hover:text-blue-900 text-sm">Test</button>
-                  <button className="text-gray-600 hover:text-gray-900 text-sm">Edit</button>
-                  <button className="text-red-600 hover:text-red-900 text-sm">Delete</button>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>Type: Dot Matrix</p>
-                <p>Connection: Serial Port (COM3)</p>
-                <p>Paper: 110mm</p>
-                <p>Location: Main Office</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default ReceiptPrinters;
+const empty = { name: '', printerType: 'Thermal Printer', connectionType: 'USB', connectionValue: '', paperWidth: '80mm', locationId: '' };
+export default function ReceiptPrinters() {
+  const [printers, setPrinters] = useState([]); const [form, setForm] = useState(empty); const [locations, setLocations] = useState([]); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState('');
+  const load = async () => { try { setPrinters(await settingsService.getPrinters()); } catch (e) { setError(e.response?.data?.message || 'Failed to load printers'); } finally { setLoading(false); } };
+  useEffect(() => { load(); businessLocationService.getAll().then(setLocations).catch(() => setLocations([])); }, []);
+  const submit = async (e) => { e.preventDefault(); setSaving(true); setError(''); try { const location = locations.find((item) => String(item.id) === String(form.locationId) || item.name === form.locationId); await settingsService.savePrinter({ ...form, locationId: location?.id || null }); setForm(empty); await load(); } catch (err) { setError(err.response?.data?.message || 'Failed to save printer'); } finally { setSaving(false); } };
+  const remove = async (id) => { if (!window.confirm('Delete this printer?')) return; try { await settingsService.deletePrinter(id); await load(); } catch (e) { setError(e.response?.data?.message || 'Failed to delete printer'); } };
+  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  return <div className="p-6"><div className="mb-6"><h1 className="text-2xl font-bold text-gray-800">Receipt Printers</h1><p className="mt-2 text-gray-600">Configure receipt printers for POS system</p></div>{error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{error}</div>}<div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><form onSubmit={submit} className="space-y-4 rounded-lg bg-white p-6 shadow-md"><h2 className="text-lg font-semibold text-gray-800">{form.id ? 'Edit Printer' : 'Add New Printer'}</h2>{[['name', 'Printer Name'], ['connectionValue', 'IP Address / Port']].map(([name, label]) => <div key={name}><label className="mb-2 block text-sm font-medium text-gray-700">{label}</label><input name={name} value={form[name]} onChange={change} required={name === 'name'} className="w-full rounded-lg border border-gray-300 px-4 py-2" /></div>)}{[['printerType', ['Thermal Printer', 'Dot Matrix', 'Laser Printer', 'Inkjet Printer']], ['connectionType', ['USB', 'Network (IP Address)', 'Bluetooth', 'Serial Port']], ['paperWidth', ['58mm', '80mm', '110mm']]].map(([name, values]) => <select key={name} name={name} value={form[name]} onChange={change} className="w-full rounded-lg border border-gray-300 px-4 py-2">{values.map((value) => <option key={value}>{value}</option>)}</select>)}<BusinessLocationSelect value={form.locationId} onChange={(e) => setForm({ ...form, locationId: e.target.value })} /><button disabled={saving} className="w-full rounded-lg bg-teal-600 px-4 py-2 text-white disabled:bg-gray-400">{saving ? 'Saving...' : 'Save Printer'}</button></form><div className="rounded-lg bg-white p-6 shadow-md"><h2 className="mb-4 text-lg font-semibold text-gray-800">Configured Printers</h2>{loading ? <p>Loading printers...</p> : printers.length === 0 ? <p className="text-gray-500">No printers configured.</p> : <div className="space-y-3">{printers.map((printer) => <div key={printer.id} className="rounded-lg border border-gray-200 p-4"><div className="flex justify-between gap-3"><div><h3 className="font-semibold">{printer.name}</h3><p className="text-sm text-gray-600">{printer.printerType} · {printer.connectionType} {printer.connectionValue && `(${printer.connectionValue})`}</p><p className="text-sm text-gray-600">Paper: {printer.paperWidth}</p></div><div className="flex gap-2 text-sm"><button onClick={() => setForm(printer)} className="text-blue-600">Edit</button><button onClick={() => remove(printer.id)} className="text-red-600">Delete</button></div></div></div>)}</div>}</div></div></div>;
+}

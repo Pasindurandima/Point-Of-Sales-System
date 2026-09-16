@@ -60,7 +60,7 @@ public class UserSettings {
     private String dateFormat = "MM/DD/YYYY";
 
     @Column(name = "currency")
-    private String currency = "USD";
+    private String currency = "LKR";
 
     // System Settings
     @Column(name = "auto_backup")

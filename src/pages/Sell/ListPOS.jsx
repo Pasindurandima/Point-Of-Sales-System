@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, Monitor, Printer, X } from 'lucide-react';
 import { saleService } from '../../services/apiService';
+import { formatCurrency, formatDate } from '../../context/BusinessSettingsContext';
 
 const ListPOS = () => {
   const navigate = useNavigate();
@@ -39,9 +40,6 @@ const ListPOS = () => {
       || sale.customer?.name?.toLowerCase().includes(search)
       || sale.paymentMethod?.toLowerCase().includes(search);
   });
-
-  const formatDate = (value) => value ? new Date(value).toLocaleString() : 'N/A';
-  const formatCurrency = (value) => `Rs ${Number(value || 0).toFixed(2)}`;
 
   const handlePrint = (sale) => {
     const items = (sale.items || []).map(item => `

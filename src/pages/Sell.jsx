@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { saleService, productService, customerService } from '../services/apiService';
+import { formatCurrency } from '../context/BusinessSettingsContext';
 
 export default function Sell() {
   // State Management
@@ -148,7 +149,7 @@ export default function Sell() {
     const paid = parseFloat(paidAmount) || 0;
 
     if (paid < total) {
-      setError(`Insufficient payment. Total: $${total.toFixed(2)}, Paid: $${paid.toFixed(2)}`);
+      setError(`Insufficient payment. Total: ${formatCurrency(total)}, Paid: ${formatCurrency(paid)}`);
       return;
     }
 

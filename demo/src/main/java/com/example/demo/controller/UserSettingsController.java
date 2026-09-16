@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.dto.UserSettingsDTO;
+import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserSettingsService;
 
 import lombok.RequiredArgsConstructor;
@@ -21,11 +23,20 @@ import lombok.RequiredArgsConstructor;
 public class UserSettingsController {
 
     private final UserSettingsService settingsService;
+    private final UserRepository userRepository;
+
+    private Long userId(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new ResourceNotFoundException("Authenticated user not found");
+        }
+        return userRepository.findByUsername(authentication.getName())
+                .map(user -> user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<UserSettingsDTO>> getUserSettings(Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
-        UserSettingsDTO settings = settingsService.getUserSettings(userId);
+        UserSettingsDTO settings = settingsService.getUserSettings(userId(authentication));
         return ResponseEntity.ok(ApiResponse.success("Settings retrieved successfully", settings));
     }
 
@@ -33,15 +44,13 @@ public class UserSettingsController {
     public ResponseEntity<ApiResponse<UserSettingsDTO>> updateUserSettings(
             Authentication authentication,
             @RequestBody UserSettingsDTO settingsDTO) {
-        Long userId = Long.parseLong(authentication.getName());
-        UserSettingsDTO updatedSettings = settingsService.updateUserSettings(userId, settingsDTO);
+        UserSettingsDTO updatedSettings = settingsService.updateUserSettings(userId(authentication), settingsDTO);
         return ResponseEntity.ok(ApiResponse.success("Settings updated successfully", updatedSettings));
     }
 
     @PostMapping("/reset")
     public ResponseEntity<ApiResponse<Void>> resetToDefaults(Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
-        settingsService.resetToDefaults(userId);
+        settingsService.resetToDefaults(userId(authentication));
         return ResponseEntity.ok(ApiResponse.success("Settings reset to defaults", null));
     }
 }

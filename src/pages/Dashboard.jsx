@@ -6,6 +6,7 @@ import {
   FileText, Wallet, RotateCcw, DollarSign, Package
 } from 'lucide-react';
 import { dashboardService, saleService, productService, purchaseService, expenseService, customerService, supplierService } from '../services/apiService';
+import { formatCurrency } from '../context/BusinessSettingsContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -172,14 +173,14 @@ const Dashboard = () => {
   const dashboardCards = [
     { 
       title: 'TOTAL SALES', 
-      value: `Rs ${statistics.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      value: formatCurrency(statistics.totalSales), 
       icon: FileText, 
       color: 'bg-green-600',
       iconBg: 'bg-green-100'
     },
     { 
       title: 'NET PROFIT', 
-      value: `Rs ${statistics.netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      value: formatCurrency(statistics.netProfit), 
       icon: Database, 
       color: statistics.netProfit >= 0 ? 'bg-purple-600' : 'bg-red-600',
       iconBg: statistics.netProfit >= 0 ? 'bg-purple-100' : 'bg-red-100',
@@ -187,14 +188,14 @@ const Dashboard = () => {
     },
     { 
       title: 'INVOICE DUE', 
-      value: `Rs ${statistics.invoiceDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      value: formatCurrency(statistics.invoiceDue), 
       icon: FileText, 
       color: 'bg-orange-600',
       iconBg: 'bg-orange-100'
     },
     { 
       title: 'TOTAL PURCHASE', 
-      value: `Rs ${statistics.totalPurchase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      value: formatCurrency(statistics.totalPurchase), 
       icon: Package, 
       color: 'bg-blue-600',
       iconBg: 'bg-blue-100'
@@ -208,7 +209,7 @@ const Dashboard = () => {
     },
     { 
       title: 'EXPENSE', 
-      value: `Rs ${statistics.totalExpense.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      value: formatCurrency(statistics.totalExpense), 
       icon: DollarSign, 
       color: 'bg-red-600',
       iconBg: 'bg-red-100'

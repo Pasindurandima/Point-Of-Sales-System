@@ -671,6 +671,17 @@ export const businessLocationService = {
   },
 };
 
+export const settingsService = {
+  getProfile: async () => (await api.get('/settings/profile')).data?.data,
+  saveProfile: async (data) => (await api.put('/settings/profile', data)).data?.data,
+  getPrinters: async () => (await api.get('/settings/printers')).data?.data || [],
+  savePrinter: async (data) => (await api.post('/settings/printers', data)).data?.data,
+  deletePrinter: async (id) => (await api.delete(`/settings/printers/${id}`)).data,
+  getTaxRates: async () => (await api.get('/settings/tax-rates')).data?.data || [],
+  saveTaxRate: async (data) => (await api.post('/settings/tax-rates', data)).data?.data,
+  deleteTaxRate: async (id) => (await api.delete(`/settings/tax-rates/${id}`)).data,
+};
+
 // Stock Adjustment Services
 export const stockAdjustmentService = {
   getAll: async (location = null) => {

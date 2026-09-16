@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatCurrency } from '../../context/BusinessSettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { expenseService } from '../../services/apiService';
@@ -353,15 +354,15 @@ const AddExpenses = () => {
               <div className="w-64 space-y-2 bg-gray-50 p-4 rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">${(parseFloat(formData.amount) || 0).toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(formData.amount)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Tax ({formData.taxPercent}%):</span>
-                  <span className="font-medium">${calculateTax(formData.amount, formData.taxPercent).toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(calculateTax(formData.amount, formData.taxPercent))}</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between text-lg font-bold">
                   <span>Total Amount:</span>
-                  <span className="text-teal-600">${calculateTotal().toFixed(2)}</span>
+                  <span className="text-teal-600">{formatCurrency(calculateTotal())}</span>
                 </div>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Plus, Trash2, Check } from 'lucide-react';
 import { productService } from '../../services/apiService';
 import { stockAdjustmentService } from '../../services/apiService';
+import { formatCurrency } from '../../context/BusinessSettingsContext';
 import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 
 const AddStockAdjustments = () => {
@@ -386,7 +387,7 @@ const AddStockAdjustments = () => {
                             />
                           </td>
                           <td className="px-4 py-2 text-sm font-medium">
-                            ${(Number(item.subtotal) || 0).toFixed(2)}
+                            {formatCurrency(item.subtotal)}
                           </td>
                           <td className="px-4 py-2">
                             <button

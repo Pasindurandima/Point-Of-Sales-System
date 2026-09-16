@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import BusinessLocationSelect from './BusinessLocationSelect';
 import { paymentAccountService } from '../services/apiService';
+import { formatCurrency, formatDate } from '../context/BusinessSettingsContext';
 
-const money = (value) => `$${(Number(value) || 0).toFixed(2)}`;
-const dateText = (value) => value ? new Date(value).toLocaleDateString() : '-';
+const money = (value) => formatCurrency(value);
+const dateText = (value) => value ? formatDate(value) : '-';
 
 export default function PaymentReportView({ mode }) {
   const [report, setReport] = useState(null);

@@ -7,6 +7,7 @@ import {
   FaLightbulb, FaUserCircle, FaSignOutAlt, FaAngleRight
 } from 'react-icons/fa';
 import { hasPermission, permissionForPath } from '../../utils/permissions';
+import { useBusinessSettings } from '../../context/BusinessSettingsContext';
 
 const menuItems = [
   { name: 'Home', path: '/', icon: FaHome },
@@ -161,7 +162,6 @@ const menuItems = [
       { name: 'Barcode Settings', path: '/settings/barcode' },
       { name: 'Receipt Printers', path: '/settings/printers' },
       { name: 'Tax Rates', path: '/settings/tax-rates' },
-      { name: 'Package Subscription', path: '/settings/subscription' },
     ]
   },
   { name: 'HRM', path: '/hrm', icon: FaUserTie },
@@ -172,6 +172,8 @@ const menuItems = [
 
 export default function Sidebar() {
   const [expandedMenus, setExpandedMenus] = useState({});
+  const { businessName } = useBusinessSettings();
+  const displayBusinessName = businessName?.trim() || 'Business Name';
   const visibleMenuItems = menuItems
     .map((item) => ({
       ...item,
@@ -196,7 +198,7 @@ export default function Sidebar() {
 
   return (
     <aside className="w-54 bg-emerald-800 text-white h-screen p-4 overflow-y-auto flex-shrink-0">
-      <div className="text-xl font-bold mb-6">SecU Engineering</div>
+      <div className="mb-6 truncate text-xl font-bold" title={displayBusinessName}>{displayBusinessName}</div>
 
       <nav className="flex flex-col space-y-1 pb-6">
         {visibleMenuItems.map((m) => (

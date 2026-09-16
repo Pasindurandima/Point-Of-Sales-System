@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { stockAdjustmentService } from '../../services/apiService';
 import BusinessLocationSelect from '../../components/BusinessLocationSelect';
+import { formatCurrency, formatDate } from '../../context/BusinessSettingsContext';
 
 const ListStockAdjustments = () => {
   const navigate = useNavigate();
@@ -84,15 +85,6 @@ const ListStockAdjustments = () => {
     }, 0);
   };
 
-  const formatDate = (iso) => {
-    if (!iso) return '';
-    try {
-      return new Date(iso).toLocaleDateString();
-    } catch (e) {
-      return iso.split('T')[0];
-    }
-  };
-
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -159,7 +151,7 @@ const ListStockAdjustments = () => {
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Increase</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(Number(adj.totalAmount) || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(adj.totalAmount)}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{adj.reason?.replaceAll('_', ' ')}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button onClick={() => handleView(adj)} className="text-teal-600 hover:text-teal-900 mr-2">View</button>
@@ -218,7 +210,7 @@ const ListStockAdjustments = () => {
                       <td className="px-4 py-2">{it.currentStock}</td>
                       <td className="px-4 py-2">{it.adjustmentType}</td>
                       <td className="px-4 py-2">{it.quantity}</td>
-                      <td className="px-4 py-2">${(Number(it.unitCost) || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2">{formatCurrency(it.unitCost)}</td>
                       <td className="px-4 py-2">${(Number(it.subtotal) || 0).toFixed(2)}</td>
                     </tr>
                   ))}

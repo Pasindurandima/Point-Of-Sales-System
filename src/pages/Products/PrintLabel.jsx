@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Printer, FileText, Barcode, Package, Search, X } from 'lucide-react';
 import JsBarcode from 'jsbarcode';
 import { productService } from '../../services/apiService';
+import { formatCurrency, readBusinessSettings } from '../../context/BusinessSettingsContext';
 
 const PrintLabel = () => {
   const [labelConfig, setLabelConfig] = useState({
@@ -123,7 +124,7 @@ const PrintLabel = () => {
         ">
           ${includeCompanyName ? '<div style="font-size: 8px; font-weight: bold; margin-bottom: 4px;">YOUR COMPANY NAME</div>' : ''}
           ${includeProductName ? `<div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">${selectedProduct.name}</div>` : ''}
-          ${includePrice ? `<div style="font-size: 14px; font-weight: bold; color: #0d9488; margin-bottom: 4px;">Rs ${(selectedProduct.sellingPrice || 0).toFixed(2)}</div>` : ''}
+          ${includePrice ? `<div style="font-size: 14px; font-weight: bold; color: #0d9488; margin-bottom: 4px;">${formatCurrency(selectedProduct.sellingPrice, readBusinessSettings())}</div>` : ''}
           ${includeBarcode ? `
             <div style="margin-top: 4px;">
               <svg class="product-barcode" width="100" height="30"></svg>

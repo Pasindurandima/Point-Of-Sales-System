@@ -1,13 +1,15 @@
 package com.example.demo.service;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.demo.dto.UserSettingsDTO;
 import com.example.demo.entity.User;
 import com.example.demo.model.UserSettings;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.UserSettingsRepository;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -86,7 +88,7 @@ public class UserSettingsService {
             settings.setTheme("light");
             settings.setLanguage("en");
             settings.setDateFormat("MM/DD/YYYY");
-            settings.setCurrency("USD");
+            settings.setCurrency("LKR");
             settings.setAutoBackup(true);
             settings.setBackupFrequency("daily");
             settings.setDataRetention(90);
@@ -108,7 +110,7 @@ public class UserSettingsService {
         settings.setTheme("light");
         settings.setLanguage("en");
         settings.setDateFormat("MM/DD/YYYY");
-        settings.setCurrency("USD");
+        settings.setCurrency("LKR");
         settings.setAutoBackup(true);
         settings.setBackupFrequency("daily");
         settings.setDataRetention(90);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Eye, Trash2, AlertCircle, X, CreditCard } from 'lucide-react';
 import { purchaseService } from '../../services/apiService';
+import { formatCurrency, formatDate } from '../../context/BusinessSettingsContext';
 
 const ListPurchase = () => {
   const navigate = useNavigate();
@@ -104,17 +105,6 @@ const ListPurchase = () => {
     
     return matchesSearch && matchesDate;
   });
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  };
-
-  const formatCurrency = (amount) => {
-    if (!amount) return '₨ 0.00';
-    return `₨ ${parseFloat(amount).toFixed(2)}`;
-  };
 
   const getStatusBadge = (status) => {
     const statusColors = {

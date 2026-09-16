@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { reportService } from '../../services/apiService';
+import { formatCurrency } from '../../context/BusinessSettingsContext';
 
 const ProfitLossReport = () => {
   const [reportData, setReportData] = useState(null);
@@ -31,7 +32,7 @@ const ProfitLossReport = () => {
   };
 
   const handleExport = () => {
-    const content = `PROFIT & LOSS REPORT\n\nPeriod: ${startDate} to ${endDate}\n\nREVENUE\nTotal Revenue: $${parseFloat(reportData.totalRevenue).toFixed(2)}\n\nCOST OF GOODS SOLD\nTotal COGS: $${parseFloat(reportData.totalCOGS).toFixed(2)}\n\nGross Profit: $${parseFloat(reportData.grossProfit).toFixed(2)}\n\nOPERATING EXPENSES\nTotal Operating Expenses: $${parseFloat(reportData.totalOperatingExpenses).toFixed(2)}\n\nNET PROFIT: $${parseFloat(reportData.netProfit).toFixed(2)}\nProfit Margin: ${reportData.profitMargin.toFixed(2)}%`;
+    const content = `PROFIT & LOSS REPORT\n\nPeriod: ${startDate} to ${endDate}\n\nREVENUE\nTotal Revenue: ${formatCurrency(reportData.totalRevenue)}\n\nCOST OF GOODS SOLD\nTotal COGS: ${formatCurrency(reportData.totalCOGS)}\n\nGross Profit: ${formatCurrency(reportData.grossProfit)}\n\nOPERATING EXPENSES\nTotal Operating Expenses: ${formatCurrency(reportData.totalOperatingExpenses)}\n\nNET PROFIT: ${formatCurrency(reportData.netProfit)}\nProfit Margin: ${reportData.profitMargin.toFixed(2)}%`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -109,17 +110,17 @@ const ProfitLossReport = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-md">
           <div className="text-sm opacity-90 mb-2">Total Revenue</div>
-          <div className="text-3xl font-bold">${parseFloat(reportData.totalRevenue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          <div className="text-3xl font-bold">{formatCurrency(reportData.totalRevenue)}</div>
           <div className="text-xs opacity-75 mt-2">From sales</div>
         </div>
         <div className="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-lg shadow-md">
           <div className="text-sm opacity-90 mb-2">Total Expenses</div>
-          <div className="text-3xl font-bold">${(Number(reportData.totalCOGS || 0) + Number(reportData.totalOperatingExpenses || 0)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          <div className="text-3xl font-bold">{formatCurrency(Number(reportData.totalCOGS || 0) + Number(reportData.totalOperatingExpenses || 0))}</div>
           <div className="text-xs opacity-75 mt-2">COGS + Operating</div>
         </div>
         <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-md">
           <div className="text-sm opacity-90 mb-2">Net Profit</div>
-          <div className="text-3xl font-bold">${parseFloat(reportData.netProfit).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          <div className="text-3xl font-bold">{formatCurrency(reportData.netProfit)}</div>
           <div className="text-xs opacity-75 mt-2">Margin: {reportData.profitMargin.toFixed(2)}%</div>
         </div>
       </div>
@@ -131,7 +132,7 @@ const ProfitLossReport = () => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
-            <Tooltip formatter={(value) => `$${parseFloat(value).toFixed(2)}`} />
+            <Tooltip formatter={(value) => formatCurrency(value)} />
             <Legend />
             <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} name="Revenue" />
             <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} name="Expenses" />
@@ -146,19 +147,19 @@ const ProfitLossReport = () => {
           <div>
             <h3 className="font-semibold text-teal-600 mb-2">REVENUE</h3>
             <div className="ml-4 space-y-1">
-              <div className="flex justify-between text-sm"><span>Sales Revenue</span><span className="font-medium">${parseFloat(reportData.totalRevenue).toFixed(2)}</span></div>
-              <div className="flex justify-between font-semibold border-t pt-2"><span>Total Revenue</span><span className="text-blue-600">${parseFloat(reportData.totalRevenue).toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm"><span>Sales Revenue</span><span className="font-medium">{formatCurrency(reportData.totalRevenue)}</span></div>
+              <div className="flex justify-between font-semibold border-t pt-2"><span>Total Revenue</span><span className="text-blue-600">{formatCurrency(reportData.totalRevenue)}</span></div>
             </div>
           </div>
           <div>
             <h3 className="font-semibold text-teal-600 mb-2">COST OF GOODS SOLD</h3>
             <div className="ml-4 space-y-1">
-              <div className="flex justify-between text-sm"><span>Total Purchases</span><span className="font-medium">${parseFloat(reportData.totalCOGS).toFixed(2)}</span></div>
-              <div className="flex justify-between font-semibold border-t pt-2"><span>Total COGS</span><span className="text-red-600">${parseFloat(reportData.totalCOGS).toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm"><span>Total Purchases</span><span className="font-medium">{formatCurrency(reportData.totalCOGS)}</span></div>
+              <div className="flex justify-between font-semibold border-t pt-2"><span>Total COGS</span><span className="text-red-600">{formatCurrency(reportData.totalCOGS)}</span></div>
             </div>
           </div>
           <div className="bg-blue-50 p-3 rounded">
-            <div className="flex justify-between font-bold"><span>GROSS PROFIT</span><span className="text-blue-600">${parseFloat(reportData.grossProfit).toFixed(2)}</span></div>
+            <div className="flex justify-between font-bold"><span>GROSS PROFIT</span><span className="text-blue-600">{formatCurrency(reportData.grossProfit)}</span></div>
           </div>
           <div>
             <h3 className="font-semibold text-teal-600 mb-2">OPERATING EXPENSES</h3>
@@ -167,17 +168,17 @@ const ProfitLossReport = () => {
                 Object.entries(reportData.expenseBreakdown).map(([category, amount]) => (
                   <div key={category} className="flex justify-between text-sm">
                     <span>{category.charAt(0) + category.slice(1).toLowerCase()}</span>
-                    <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(amount)}</span>
                   </div>
                 ))
               ) : (
                 <div className="text-sm text-gray-500">No expense breakdown available</div>
               )}
-              <div className="flex justify-between font-semibold border-t pt-2"><span>Total Operating Expenses</span><span className="text-red-600">${parseFloat(reportData.totalOperatingExpenses).toFixed(2)}</span></div>
+              <div className="flex justify-between font-semibold border-t pt-2"><span>Total Operating Expenses</span><span className="text-red-600">{formatCurrency(reportData.totalOperatingExpenses)}</span></div>
             </div>
           </div>
           <div className="bg-green-50 p-4 rounded">
-            <div className="flex justify-between text-lg font-bold"><span>NET PROFIT</span><span className={`${parseFloat(reportData.netProfit) >= 0 ? 'text-green-600' : 'text-red-600'}`}>${parseFloat(reportData.netProfit).toFixed(2)}</span></div>
+            <div className="flex justify-between text-lg font-bold"><span>NET PROFIT</span><span className={`${parseFloat(reportData.netProfit) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(reportData.netProfit)}</span></div>
             <div className="text-sm text-gray-600 mt-1">Profit Margin: {reportData.profitMargin.toFixed(2)}%</div>
           </div>
         </div>

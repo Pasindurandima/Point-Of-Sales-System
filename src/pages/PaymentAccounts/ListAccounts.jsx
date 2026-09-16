@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import BusinessLocationSelect from '../../components/BusinessLocationSelect';
 import { paymentAccountService } from '../../services/apiService';
+import { formatCurrency } from '../../context/BusinessSettingsContext';
 
 const emptyForm = { name: '', accountNumber: '', type: 'BANK', provider: '', businessLocation: '', openingBalance: '0' };
-const money = (value) => `$${(Number(value) || 0).toFixed(2)}`;
+const money = (value) => formatCurrency(value);
 
 export default function ListAccounts() {
   const [accounts, setAccounts] = useState([]);
